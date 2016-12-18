@@ -1,5 +1,7 @@
 library(tidyverse)
 library(stringr)
+library(magrittr)
+library(lazyeval)
 
 col_types <- cols(treat = col_character(),
                   bias = col_character(),
@@ -19,6 +21,7 @@ db <- read_tsv("./search.csv", col_types = col_types) %>%
   filter(period > 20) %>%
   mutate(treat_id = as.integer(str_sub(treat, 2)),
          market_id = treat_id * 1000 + market * 100 + period,
+         group = as.integer(floor((period - 1) / 10)),
          epsprice = if_else(bias == "u" | indexed, price, NA_real_),
          muprice = if_else(indexed, price, NA_real_))
 
@@ -52,6 +55,51 @@ min5 <- filter(pricedb, treat == "t5")$pmin
 min6 <- filter(pricedb, treat == "t6")$pmin
 min7 <- filter(pricedb, treat == "t7")$pmin
 min8 <- filter(pricedb, treat == "t8")$pmin
+
+kruskal.test(epsprice ~ group, data = filter(db, treat == "t1", group != 2))
+kruskal.test(epsprice ~ group, data = filter(db, treat == "t2", group != 2))
+kruskal.test(epsprice ~ group, data = filter(db, treat == "t3", group != 2))
+kruskal.test(epsprice ~ group, data = filter(db, treat == "t4", group != 2))
+kruskal.test(epsprice ~ group, data = filter(db, treat == "t5", group != 2))
+kruskal.test(epsprice ~ group, data = filter(db, treat == "t6", group != 2))
+kruskal.test(epsprice ~ group, data = filter(db, treat == "t7", group != 2))
+kruskal.test(epsprice ~ group, data = filter(db, treat == "t8", group != 2))
+
+
+filter(pricedb, treat == "t1") %$% cor.test(pmean, period, method = "kendall")
+filter(pricedb, treat == "t2") %$% cor.test(pmean, period, method = "kendall")
+filter(pricedb, treat == "t3") %$% cor.test(pmean, period, method = "kendall")
+filter(pricedb, treat == "t4") %$% cor.test(pmean, period, method = "kendall")
+filter(pricedb, treat == "t5") %$% cor.test(pmean, period, method = "kendall")
+filter(pricedb, treat == "t6") %$% cor.test(pmean, period, method = "kendall")
+filter(pricedb, treat == "t7") %$% cor.test(pmean, period, method = "kendall")
+filter(pricedb, treat == "t8") %$% cor.test(pmean, period, method = "kendall")
+
+
+do_plot <- function(treat) {
+  ggplot(data = filter_(pricedb, interp(~ treat == x, x = treat)),
+         mapping = aes(x = period, y = pmean)) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    coord_fixed(ratio = 30 / 1) +
+    ggtitle(paste0("Treatment: ", treat))
+}
+
+treatments <- paste0("t", 1:8)
+for(t in treatments) {
+  plt <- do_plot(t)
+  print(plt)
+}
+
+ggplot(data = filter(pricedb, treat == "t8"),
+       mapping = aes(x = period, y = pmean)) +
+  geom_point() +
+  geom_smooth()
+
+
+filter(pricedb, treat == "t1") %$% plot(period, pmean)
+
+
 
 t.test(avg1, avg4, alternative = "less")
 
