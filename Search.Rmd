@@ -8,32 +8,51 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, comment = " ")
 library(tidyverse)
 library(knitr)
 ```
 
 ## Data
 
-The data are stored in three files:
+The variables are stored in three files: one for treatment design variables, `./data/treatments.csv`; another for lotteries results, `./data/subjects.csv`; and, finally, one for prices, `./data/prices.csv`.
 
-- `./data/treatments.csv`: treatment design variables.
-- `./data/subjects.csv`: lotteries results.
-- `./data/prices.csv`: prices.
-
-
+### Treatment design variables
 ```{r}
 treat_db <- read_csv('./data/treatments.csv', col_types = "ilii")
 kable(treat_db, align = "cccc")
 ```
 
+Variables:
+
+- `treat_id`: the treatment id; an integer.
+- `biased`: true if the treatment's search engine is biased; a logical. 
+- `n`: number of firms in the market; an integer.
+- `k`: number of firms in the index, $k \leq n$; an integer.
+
+### Lotteries results
 ```{r}
 subjects_db <- read_csv('./data/subjects.csv', col_types = "idddd")
 glimpse(subjects_db)
 ```
 
+Variables:
 
+- `subject_id`: the subject id; an integer.
+- `p1, p2, p3, p4`: subject's lottery choices in each of the four panels; a double between 0.0 an 1.0. 
+
+
+### Prices 
 ```{r}
 prices_db <- read_csv('./data/prices.csv', col_types = "iiiild")
 glimpse(prices_db)
 ```
+
+Variables:
+
+- `treat_id`: treatment id; an integer.
+- `market_id`: market id; an integer.
+- `period`: time period; an integer.
+- `subject_id`: subject id; an integer.
+- `indexed`: true if the price is included in the index; a logical.
+- `price`: the price; a double between 0.0 and 1.0.
