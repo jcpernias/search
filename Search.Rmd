@@ -107,3 +107,26 @@ markets %>% group_by(treat) %>%
   do(tidy(cor.test(~ pavg + period, method = "kendall", data = .))) %>%
   select(-one_of(c("method", "alternative")))
 ```
+
+```{r}
+a_plot <- function(data) {
+  ggplot(data = data, mapping = aes(x = period, y = pavg)) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    coord_fixed(ratio = 30 / 1) +
+    ggtitle(paste0("Treatment: ", data$treat[1]))
+}
+
+
+plots <- markets %>% group_by(treat) %>%
+  do(plt = a_plot(.))
+```
+
+
+```{r}
+  ggplot(data = markets, mapping = aes(x = period, y = pavg)) +
+    geom_point() +
+    facet_wrap(ncol=2, ~ treat)  +
+    geom_smooth(method = "lm")  #+
+    #coord_fixed(ratio = 30 / 1) 
+```
