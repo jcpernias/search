@@ -3,6 +3,10 @@ library(stringr)
 library(magrittr)
 library(lazyeval)
 
+treat_to_int <- 1:8
+names(treat_to_int) <- paste0("t", treat_to_int)
+
+
 col_types <- cols(treat = col_character(),
                   bias = col_character(),
                   n = col_integer(),
@@ -19,8 +23,9 @@ col_types <- cols(treat = col_character(),
 
 db <- read_tsv("./search.csv", col_types = col_types) %>%
   filter(period > 20) %>%
-  mutate(treat_id = as.integer(str_sub(treat, 2)),
+  mutate(treat_id = treat_to_int[treat],
          market_id = treat_id * 1000 + market * 100 + period,
+         subject_id = (treat_id - 1) * 18 + subject,
          group = as.integer(floor((period - 1) / 10)),
          epsprice = if_else(bias == "u" | indexed, price, NA_real_),
          muprice = if_else(indexed, price, NA_real_))
