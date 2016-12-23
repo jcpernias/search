@@ -56,3 +56,36 @@ Variables:
 - `subject_id`: subject id; an integer.
 - `indexed`: true if the price is included in the index; a logical.
 - `price`: the price; a double between 0.0 and 1.0.
+
+## Results
+
+### Sample
+
+The first 20 periods are dropped from the sample. Two new price variables:
+
+- Selectable prices: all prices from unbiased treatments and those from indexed firms in biased treatments.
+- Indexed prices: only the prices finally appearing in the index.
+
+```{r}
+smpl <- left_join(prices_db, treat_db, by = 'treat_id') %>% 
+  filter(period > 20) %>%
+  mutate(pselect = if_else(!biased | indexed, price, NA_real_),
+         pindex = if_else(indexed, price, NA_real_))
+
+markets <- smpl %>% group_by(market_id) %>%
+  summarise(treat = first(treat_id),
+            period = first(period),
+            pavg = mean(pselect, na.rm = TRUE),
+            pmin = min(pindex, na.rm = TRUE))
+
+dstats <- markets %>% group_by(treat) %>%
+  summarise('Avg p: mean' = mean(pavg),
+            'Avg p: sd' = sd(pavg),
+            'Min p: mean' = mean(pmin),
+            'MIn p: sd' = sd(pmin))
+
+kable(dstats, digits = 3)
+
+```
+
+
