@@ -102,3 +102,8 @@ filter(markets, group != 2) %>% group_by(treat) %>%
   select(-method)
 ```
 
+```{r}
+markets %>% group_by(treat) %>% 
+  do(tidy(cor.test(~ pavg + period, method = "kendall", data = .))) %>%
+  select(-one_of(c("method", "alternative")))
+```
