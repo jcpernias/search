@@ -10,6 +10,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, comment = " ")
 library(tidyverse)
+library(broom)
 library(knitr)
 ```
 
@@ -76,7 +77,8 @@ markets <- smpl %>% group_by(market_id) %>%
   summarise(treat = first(treat_id),
             period = first(period),
             pavg = mean(pselect, na.rm = TRUE),
-            pmin = min(pindex, na.rm = TRUE))
+            pmin = min(pindex, na.rm = TRUE)) %>%
+  mutate(group = as.integer(floor((period  - 1) / 10) - 1))
 
 dstats <- markets %>% group_by(treat) %>%
   summarise('Avg p: mean' = mean(pavg),
@@ -88,4 +90,15 @@ kable(dstats, digits = 3)
 
 ```
 
+```{r}
+markets %>% group_by(treat) %>% 
+  do(tidy(kruskal.test(pavg ~ group, data = .))) %>%
+  select(-method)
+```
+
+```{r}
+filter(markets, group != 2) %>% group_by(treat) %>% 
+  do(tidy(kruskal.test(pavg ~ group, data = .))) %>%
+  select(-method)
+```
 
