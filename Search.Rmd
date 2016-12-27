@@ -68,21 +68,30 @@ Variables:
 
 The first 20 periods are dropped from the sample. Two new price variables:
 
-- Selectable prices: all prices from unbiased treatments and those from indexed firms in biased treatments.
-- Indexed prices: only the prices finally appearing in the index.
+- Selectable prices: all prices from unselective coverage treatments and those from indexed vendors in selective coverage treatments; `pselect`. Average market prices are based on this variable.
+- Indexed prices: only the prices of indexed vendors in every treatment; `pindex`. The minimum of these prices in each market is the price paid by shoppers. 
+
+
 
 ```{r}
 smpl <- left_join(prices_db, treat_db, by = 'treat_id') %>% 
   filter(period > 20) %>%
   mutate(pselect = if_else(!biased | indexed, price, NA_real_),
          pindex = if_else(indexed, price, NA_real_))
+```
 
+Compute average market prices and average prices paid by shoopers. Also, create the `groups` variable. It will be used later to test for trends. 
+```{r}
 markets <- smpl %>% group_by(market_id) %>%
   summarise(treat = first(treat_id),
             period = first(period),
             pavg = mean(pselect, na.rm = TRUE),
             pmin = min(pindex, na.rm = TRUE)) %>%
   mutate(group = as.integer(floor((period  - 1) / 10) - 1))
+```
+
+Descriptive statistics:
+```{r}
 
 dstats <- markets %>% group_by(treat) %>%
   summarise('Avg p: mean' = mean(pavg),
@@ -93,6 +102,18 @@ dstats <- markets %>% group_by(treat) %>%
 kable(dstats, digits = 3)
 
 ```
+
+## Trends
+
+### Average market prices
+
+```{r}
+  ggplot(data = markets, mapping = aes(x = period, y = pavg)) +
+    geom_point() +
+    facet_wrap(ncol=2, ~ treat)  +
+    geom_smooth(method = "lm") 
+```
+
 
 ```{r}
 markets %>% group_by(treat) %>% 
@@ -112,25 +133,97 @@ markets %>% group_by(treat) %>%
   select(-one_of(c("method", "alternative")))
 ```
 
-```{r}
-a_plot <- function(data) {
-  ggplot(data = data, mapping = aes(x = period, y = pavg)) +
-    geom_point() +
-    geom_smooth(method = "lm") +
-    coord_fixed(ratio = 30 / 1) +
-    ggtitle(paste0("Treatment: ", data$treat[1]))
-}
 
 
-plots <- markets %>% group_by(treat) %>%
-  do(plt = a_plot(.))
-```
+### Minimum market prices
 
 
 ```{r}
-  ggplot(data = markets, mapping = aes(x = period, y = pavg)) +
+  ggplot(data = markets, mapping = aes(x = period, y = pmin)) +
     geom_point() +
     facet_wrap(ncol=2, ~ treat)  +
-    geom_smooth(method = "lm")  #+
-    #coord_fixed(ratio = 30 / 1) 
+    geom_smooth(method = "lm") 
 ```
+
+
+```{r}
+markets %>% group_by(treat) %>% 
+  do(tidy(kruskal.test(pmin ~ group, data = .))) %>%
+  select(-method)
+```
+
+```{r}
+filter(markets, group != 2) %>% group_by(treat) %>% 
+  do(tidy(kruskal.test(pmin ~ group, data = .))) %>%
+  select(-method)
+```
+
+```{r}
+markets %>% group_by(treat) %>% 
+  do(tidy(cor.test(~ pmin + period, method = "kendall", data = .))) %>%
+  select(-one_of(c("method", "alternative")))
+```
+
+
+
+
+
+
+
+
+
+
+## Tests
+
+```{r}
+treat_test <- function(var, group_var, g1, g2, data, ...,
+                       test_func = t.test) {
+  x <- data[[var]]
+  g <- data[[group_var]]
+  test_func(x[g == g1], x[g == g2], ...)
+} 
+
+treat_map <- function(var, g1, g2, H1, ...) {
+  test <- treat_test(var, "treat", g1, g2, alternative = H1, ...)
+  c(g1 = g1, g2 = g2, H1 = H1, test[c("statistic", "p.value")])
+}
+
+pavg_map <- function(g1, g2, H1, ...) {
+  treat_map("pavg", g1, g2, H1, ...)
+}
+
+pmin_map <- function(g1, g2, H1, ...) {
+  treat_map("pmin", g1, g2, H1, ...)
+}
+
+pavg_hyp <- list(g1 = c(1, 5, 7, 7, 2, 2, 6, 8, 8, 3, 8, 6, 8, 3),
+                 g2 = c(4, 4, 4, 5, 1, 7, 4, 4, 6, 1, 3, 5, 7, 2),
+                 H1 = c(rep("less", 5), "two.sided", rep("less", 8)))
+
+pmin_hyp <- list(g1 = c(4, 4, 4, 5, 1, 2, 6, 8, 8, 3, 8, 6, 8, 3),
+                 g2 = c(1, 5, 7, 7, 2, 7, 4, 4, 6, 1, 3, 5, 7, 2),
+                 H1 = c(rep("less", 5), "two.sided", rep("less", 8)))
+
+
+pmap_df(pavg_hyp, pavg_map, data = markets, var.equal = TRUE)
+
+pmap_df(pmin_hyp, pmin_map, data = markets, var.equal = TRUE)
+
+pmap_df(pavg_hyp, pavg_map, data = markets, exact = FALSE, 
+        test_func = wilcox.test)
+
+pmap_df(pmin_hyp, pmin_map, data = markets, exact = FALSE, 
+        test_func = wilcox.test)
+
+markets3 <- filter(markets, group == 3)
+
+pmap_df(pavg_hyp, pavg_map, data = markets3, exact = FALSE, 
+        test_func = wilcox.test)
+
+pmap_df(pmin_hyp, pmin_map, data = markets3, exact = FALSE,
+        test_func = wilcox.test)
+
+
+
+```
+
