@@ -3,7 +3,11 @@ title: "Search"
 author: "José C. Pernías"
 date: "23/12/2016"
 output:
-  pdf_document: default
+  pdf_document: 
+    toc: true
+    toc_depth: 1
+    number_sections: true
+    df_print: kable
   html_document: default
 ---
 
@@ -14,11 +18,11 @@ library(broom)
 library(knitr)
 ```
 
-## Data
+# Data
 
 The variables are stored in three files: one for treatment design variables, `./data/treatments.csv`; another for lotteries results, `./data/subjects.csv`; and, finally, one for prices, `./data/prices.csv`.
 
-### Treatment design variables
+## Treatment design variables
 ```{r}
 treat_db <- read_csv('./data/treatments.csv', col_types = "ilii")
 kable(treat_db, align = "cccc")
@@ -31,7 +35,7 @@ Variables:
 - `n`: number of firms in the market; an integer.
 - `k`: number of firms in the index, $k \leq n$; an integer.
 
-### Lotteries results
+## Lotteries results
 ```{r}
 subjects_db <- read_csv('./data/subjects.csv', col_types = "idddd")
 glimpse(subjects_db)
@@ -43,7 +47,7 @@ Variables:
 - `p1, p2, p3, p4`: subject's lottery choices in each of the four panels; a double between 0.0 an 1.0. 
 
 
-### Prices 
+## Prices 
 ```{r}
 prices_db <- read_csv('./data/prices.csv', col_types = "iiiild")
 glimpse(prices_db)
@@ -58,9 +62,9 @@ Variables:
 - `indexed`: true if the price is included in the index; a logical.
 - `price`: the price; a double between 0.0 and 1.0.
 
-## Results
+# Results
 
-### Sample
+## Sample
 
 The first 20 periods are dropped from the sample. Two new price variables:
 
