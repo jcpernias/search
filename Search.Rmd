@@ -81,6 +81,7 @@ smpl <- left_join(prices_db, treat_db, by = 'treat_id') %>%
 ```
 
 Compute average market prices and average prices paid by shoopers. Also, create the `groups` variable. It will be used later to test for trends. 
+
 ```{r}
 markets <- smpl %>% group_by(market_id) %>%
   summarise(treat = first(treat_id),
@@ -90,9 +91,9 @@ markets <- smpl %>% group_by(market_id) %>%
   mutate(group = as.integer(floor((period  - 1) / 10) - 1))
 ```
 
-Descriptive statistics:
-```{r}
+Descriptive statistics reported on Table 1:
 
+```{r}
 dstats <- markets %>% group_by(treat) %>%
   summarise('Avg p: mean' = mean(pavg),
             'Avg p: sd' = sd(pavg),
@@ -100,10 +101,12 @@ dstats <- markets %>% group_by(treat) %>%
             'MIn p: sd' = sd(pmin))
 
 kable(dstats, digits = 3)
-
 ```
 
+
 ## Trends
+
+We use plots in order to find evidence on the presence of trends in the expected prices. We also use Kruskall-Wallis tests to test the hypothesis that the mean of expected prices is the same across all periods. In order to do so, we divide the sample in three groups of 10 periods each. We perform two tests. One tests the null hypothesis of the three periods having the same mean. The other tests the null that the mean of the first periods is the same than the mean of the last periods. Finally, we test that the pcrices are associated with a trend. We use the Kendall correlation coefficient in order to allow for possible nonlinear association.  
 
 ### Average market prices
 
