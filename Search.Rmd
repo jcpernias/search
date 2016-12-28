@@ -1,11 +1,7 @@
 ---
-title: "Search"
-author: "José C. Pernías"
-date: "23/12/2016"
+title: "Bias and Size Effects of Price-Comparison Platforms: Theory and Experimental Evidence"
 output:
   pdf_document: 
-    toc: true
-    toc_depth: 1
     number_sections: true
     df_print: kable
   html_document: default
