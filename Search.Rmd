@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE, comment = " ")
 library(tidyverse)
 library(broom)
 library(knitr)
+library(lazyeval)
 ```
 
 # Data
@@ -104,6 +105,59 @@ kable(dstats, digits = 3)
 
 We use plots in order to find evidence on the presence of trends in the expected prices. We also use Kruskal-Wallis tests to test the hypothesis that the mean of expected prices is the same across all periods. In order to do so, we divide the sample in three groups of 10 periods each. We perform two tests. One tests the null hypothesis of the three periods having the same mean. The other tests the null that the mean of the first periods is the same than the mean of the last periods. Finally, we test that the prices are associated with a trend. We use the Kendall correlation coefficient in order to allow for possible nonlinear association.  
 
+
+```{r}
+kw_tests <- function(data, by_var, frml, filter_frml = NULL) {
+  if (!is.null(filter_frml))
+    data <- filter_(data, filter_frml)
+  data %>% group_by_(by_var) %>% 
+    do(tidy(kruskal.test(frml, data = .))) %>%
+         select(-one_of(c("method", "parameter")))
+}
+
+trend_tests <- function(frml) { 
+  # Kruskal-Wallis using all periods
+  kw1 <- kw_tests(markets, ~treat, frml)
+
+  # Kruskal-Wallis dropping the central periods:
+  kw2 <- kw_tests(markets, ~treat, frml, ~ group != 2)
+  kw2
+}
+
+trend_tests(pavg ~ group)
+```
+
+
+Kruskal-Wallis dropping the central periods:
+
+```{r}
+kw2 <- filter(markets, group != 2) %>% group_by(treat) %>% 
+  do(tidy(kruskal.test(pavg ~ group, data = .))) %>%
+  select(-one_of(c("method", "parameter")))
+```
+
+Kendall correlation test:
+
+```{r}
+kend <- markets %>% group_by(treat) %>% 
+  do(tidy(cor.test(~ pavg + period, method = "kendall", data = .))) %>%
+  select(-one_of(c("method", "statistic", "alternative")))
+```
+
+
+Collect all tests in one table:
+
+```{r}
+trend_tests <- left_join(kw1, kw2, by = "treat") %>%
+  rename(kw_all = statistic.x, p_val_all = p.value.x, 
+         kw_drop = statistic.y, p_val_drop = p.value.y) %>%
+  left_join(kend, by = "treat") %>%
+  rename(kendall = estimate, p_val_kendall = p.value)
+
+kable(trend_tests, digits = 3)
+```
+
+
 ### Average market prices
 
 Plots:
@@ -149,10 +203,15 @@ trend_tests <- left_join(kw1, kw2, by = "treat") %>%
   rename(kw_all = statistic.x, p_val_all = p.value.x, 
          kw_drop = statistic.y, p_val_drop = p.value.y) %>%
   left_join(kend, by = "treat") %>%
-  rename(kendall = estimate, p_valk_kendall = p.value)
+  rename(kendall = estimate, p_val_kendall = p.value)
 
 kable(trend_tests, digits = 3)
 ```
+
+Conclusions:
+
+- Apart from Treatment 1, there is little evidence on the presence of trends in the experimental data. 
+- Although the tests indicate, at the 5% significance level, the presence of a trend in Treatment 1, the strength of this trend is small, as measured by the Kendall correlation coefficient.
 
 ### Minimum market prices
 
@@ -160,10 +219,10 @@ kable(trend_tests, digits = 3)
 Plots:
 
 ```{r}
-  ggplot(data = markets, mapping = aes(x = period, y = pmin)) +
-    geom_point(size=0.4) +
-    facet_wrap(ncol=2, ~ treat)  +
-    geom_smooth(method = "lm", size = 0.4) 
+ggplot(data = markets, mapping = aes(x = period, y = pmin)) +
+  geom_point(size=0.4) +
+  facet_wrap(ncol=2, ~ treat)  +
+  geom_smooth(method = "lm", size = 0.4) 
 ```
 
 
