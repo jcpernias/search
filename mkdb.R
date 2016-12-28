@@ -23,7 +23,7 @@ col_types <- cols(treat = col_character(),
                   p4 = col_double())
 
 db <- read_tsv("./orig/search.csv", col_types = col_types) %>%
-  mutate(biased = bias_to_logical[bias],
+  mutate(selective = bias_to_logical[bias],
          treat_id = treat_to_int[treat],
          market_id = as.integer(treat_id * 1000 + market * 100 + period),
          subject_id = as.integer((treat_id - 1) * 18 + subject))
@@ -34,7 +34,7 @@ subjects <- db %>%
   summarise_each(funs(first))
 
 treatments <- db %>%
-  select(treat_id, biased, n, k) %>%
+  select(treat_id, selective, n, k) %>%
   group_by(treat_id) %>%
   summarise_each(funs(first))
 

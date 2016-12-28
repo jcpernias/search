@@ -31,7 +31,7 @@ kable(treat_db, align = "cccc")
 Variables:
 
 - `treat_id`: the treatment id; an integer.
-- `biased`: true if the treatment's search engine is biased; a logical. 
+- `selective`: true if the treatment's search engine is biased; a logical. 
 - `n`: number of firms in the market; an integer.
 - `k`: number of firms in the index, $k \leq n$; an integer.
 
@@ -68,7 +68,7 @@ Variables:
 
 The first 20 periods are dropped from the sample. Two new price variables:
 
-- Selectable prices: all prices from unselective coverage treatments and those from indexed vendors in selective coverage treatments; `pselect`. Average market prices are based on this variable.
+- Available prices: all prices from that could be indexed, ie, all prices in unselective coverage treatments and those from indexed vendors in selective coverage treatments; `pavail`. Average market prices are based on this variable.
 - Indexed prices: only the prices of indexed vendors in every treatment; `pindex`. The minimum of these prices in each market is the price paid by shoppers. 
 
 
@@ -76,7 +76,7 @@ The first 20 periods are dropped from the sample. Two new price variables:
 ```{r}
 smpl <- left_join(prices_db, treat_db, by = 'treat_id') %>% 
   filter(period > 20) %>%
-  mutate(pselect = if_else(!biased | indexed, price, NA_real_),
+  mutate(pavail = if_else(!selective | indexed, price, NA_real_),
          pindex = if_else(indexed, price, NA_real_))
 ```
 
@@ -85,7 +85,7 @@ Compute average market prices and average prices paid by shoopers. Also, create 
 markets <- smpl %>% group_by(market_id) %>%
   summarise(treat = first(treat_id),
             period = first(period),
-            pavg = mean(pselect, na.rm = TRUE),
+            pavg = mean(pavail, na.rm = TRUE),
             pmin = min(pindex, na.rm = TRUE)) %>%
   mutate(group = as.integer(floor((period  - 1) / 10) - 1))
 ```
