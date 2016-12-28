@@ -64,7 +64,7 @@ Variables:
 
 The first 20 periods are dropped from the sample. Two new price variables:
 
-- Available prices: all prices from that could be indexed, ie, all prices in unselective coverage treatments and those from indexed vendors in selective coverage treatments; `pavail`. Average market prices are based on this variable.
+- Available prices: all prices from that could be indexed, i.e., all prices in unselective coverage treatments and those from indexed vendors in selective coverage treatments; `pavail`. Average market prices are based on this variable.
 - Indexed prices: only the prices of indexed vendors in every treatment; `pindex`. The minimum of these prices in each market is the price paid by shoppers. 
 
 
@@ -76,7 +76,7 @@ smpl <- left_join(prices_db, treat_db, by = 'treat_id') %>%
          pindex = if_else(indexed, price, NA_real_))
 ```
 
-Compute average market prices and average prices paid by shoopers. Also, create the `groups` variable. It will be used later to test for trends. 
+Compute average market prices and average prices paid by shoppers. Also, create the `groups` variable. It will be used later to test for trends. 
 
 ```{r}
 markets <- smpl %>% group_by(market_id) %>%
@@ -102,7 +102,7 @@ kable(dstats, digits = 3)
 
 ## Trends
 
-We use plots in order to find evidence on the presence of trends in the expected prices. We also use Kruskall-Wallis tests to test the hypothesis that the mean of expected prices is the same across all periods. In order to do so, we divide the sample in three groups of 10 periods each. We perform two tests. One tests the null hypothesis of the three periods having the same mean. The other tests the null that the mean of the first periods is the same than the mean of the last periods. Finally, we test that the pcrices are associated with a trend. We use the Kendall correlation coefficient in order to allow for possible nonlinear association.  
+We use plots in order to find evidence on the presence of trends in the expected prices. We also use Kruskal-Wallis tests to test the hypothesis that the mean of expected prices is the same across all periods. In order to do so, we divide the sample in three groups of 10 periods each. We perform two tests. One tests the null hypothesis of the three periods having the same mean. The other tests the null that the mean of the first periods is the same than the mean of the last periods. Finally, we test that the prices are associated with a trend. We use the Kendall correlation coefficient in order to allow for possible nonlinear association.  
 
 ### Average market prices
 
@@ -110,9 +110,9 @@ Plots:
 
 ```{r}
   ggplot(data = markets, mapping = aes(x = period, y = pavg)) +
-    geom_point() +
+    geom_point(size=0.4) +
     facet_wrap(ncol=2, ~ treat)  +
-    geom_smooth(method = "lm") 
+    geom_smooth(method = "lm", size = 0.4) 
 ```
 
 
@@ -125,7 +125,7 @@ kw1 <- markets %>% group_by(treat) %>%
 ```
 
 
-Kruskall-Wallis dropping the central periods:
+Kruskal-Wallis dropping the central periods:
 
 ```{r}
 kw2 <- filter(markets, group != 2) %>% group_by(treat) %>% 
@@ -161,9 +161,9 @@ Plots:
 
 ```{r}
   ggplot(data = markets, mapping = aes(x = period, y = pmin)) +
-    geom_point() +
+    geom_point(size=0.4) +
     facet_wrap(ncol=2, ~ treat)  +
-    geom_smooth(method = "lm") 
+    geom_smooth(method = "lm", size = 0.4) 
 ```
 
 
@@ -175,7 +175,7 @@ kw1 <- markets %>% group_by(treat) %>%
   select(-one_of(c("method", "parameter")))
 ```
 
-Kruskall-Wallis dropping the central periods:
+Kruskal-Wallis dropping the central periods:
 
 ```{r}
 kw2 <- filter(markets, group != 2) %>% group_by(treat) %>% 
