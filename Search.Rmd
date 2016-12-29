@@ -117,13 +117,13 @@ kw_tests <- function(data, by_var, frml, filter_frml = NULL) {
 
 
 corr_test <- function(data, by_var, frml, method = "kendall") {
-  corr_test_inner <- function(data, frml, method) {
+  inner <- function(data, frml, method) {
     f_env(frml) <- environment()
     cor.test(frml, method = method, data = data)
   }
   
   data %>% group_by_(by_var) %>% 
-    do(tidy(corr_test_inner(data = ., frml, method = method))) %>%
+    do(tidy(inner(data = ., frml, method = method))) %>%
     select(-one_of(c("method", "statistic", "alternative")))
 }
 
