@@ -115,33 +115,13 @@ kw_tests <- function(data, by_var, frml, filter_frml = NULL) {
          select(-one_of(c("method", "parameter")))
 }
 
-corr_test2 <- function (formula, data, subset, na.action, ...) 
-{
-    if (missing(formula) || !inherits(formula, "formula") || 
-        length(formula) != 2L) 
-        stop("'formula' missing or invalid")
-    m <- match.call(expand.dots = FALSE)
-    if (is.matrix(eval(m$data, parent.frame()))) 
-        m$data <- as.data.frame(data)
-    m[[1L]] <- quote(stats::model.frame)
-    m$... <- NULL
-    mf <- eval(m, environment(formula))
-    #mf <- eval(m, parent.frame())
-    if (length(mf) != 2L) 
-        stop("invalid formula")
-    DNAME <- paste(names(mf), collapse = " and ")
-    names(mf) <- c("x", "y")
-    y <- do.call("cor.test", c(mf, list(...)))
-    y$data.name <- DNAME
-    y
-}
-
-corr_test_inner <- function(data, frml, method) {
-  f_env(frml) <- environment()
-  cor.test(frml, method = method, data = data)
-}
 
 corr_test <- function(data, by_var, frml, method = "kendall") {
+  corr_test_inner <- function(data, frml, method) {
+    f_env(frml) <- environment()
+    cor.test(frml, method = method, data = data)
+  }
+  
   data %>% group_by_(by_var) %>% 
     do(tidy(corr_test_inner(data = ., frml, method = method))) %>%
     select(-one_of(c("method", "statistic", "alternative")))
@@ -156,9 +136,6 @@ trend_tests <- function(var, group, filter_frml) {
   kw2 <- kw_tests(markets, ~treat, kw_frml, filter_frml)
   kw2
   
-  # kendall_frml <- f_interp(~ uq(var))
-  # kendall_frml <- ~ pavg + period
-  # print(kendall_frml)
   kend <- corr_test(markets, ~treat, ~ pavg + period)
   kend
 }
