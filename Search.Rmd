@@ -63,6 +63,71 @@ Variables:
 
 # Results
 
+## Theoretical distributions
+
+```{r}
+Fsearch <- function(n, k, phi, lambda = 1 / 2) {
+  const <- (lambda / (1 - lambda)) / (n * phi)
+  low <- lambda / (lambda + (1 - lambda) * n * phi)
+  pow <- 1 / (k - 1)
+  function(p) {
+    ans <- rep_along(p, 0)
+
+    idx <- p >= 1.0
+    if (any(idx)) {
+      ans[idx] <- 1.0
+    }
+
+    idx <- p > low & p < 1.0
+    if(any(idx)) {
+      pi <- p[idx]
+      ans[idx] <- 1 - (const * (1 - pi) / pi) ^ pow
+    }
+
+    ans
+  }
+}
+
+compl_cdf <- function(cdf) {
+  function(x) {
+    1 - cdf(x)
+  }
+}
+
+func_pow <- function(func, pow) {
+  function(x) {
+    func(x)^pow
+  }
+}
+
+func_arg <- function(func) {
+  function(x) {
+    func(x) * x
+  }
+}
+```
+
+```{r}
+moments <- function(n, k, phi, treat_id, selective) {
+  mean_sd <- function(ccdf, num = 1) {
+    EX <- integrate(ccdf, lower = 0, upper = 1)
+    EX2 <- integrate(func_arg(ccdf), lower = 0, upper = 1)
+    VX <-  2 * EX2$value - EX$value^2
+    list(mu = EX$value, sd = sqrt(VX) / sqrt(num))
+  }
+  
+  ccdf <- compl_cdf(Fsearch(n = n, k = k, phi = phi))
+  pavg_mom <- mean_sd(ccdf, if_else(selective, k, n))
+  pmin_mom <- mean_sd(func_pow(ccdf, k))
+  tibble(treat_id = treat_id, 
+         pavg_mean = pavg_mom$mu, pavg_sd = pavg_mom$sd,
+         pmin_mean = pmin_mom$mu, pmin_sd = pmin_mom$sd)  
+}
+
+treat_db %>% pmap_df(moments)
+```
+
+
 ## Sample
 
 The first 20 periods are dropped from the sample. Two new price variables:
