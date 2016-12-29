@@ -123,7 +123,7 @@ corr_test <- function(data, by_var, frml, method = "kendall") {
   }
   
   data %>% group_by_(by_var) %>% 
-    do(tidy(inner(data = ., frml, method = method))) %>%
+    do(tidy(inner(., frml, method))) %>%
     select(-one_of(c("method", "statistic", "alternative")))
 }
 
@@ -134,9 +134,11 @@ trend_tests <- function(var, group, filter_frml) {
   
   # Kruskal-Wallis dropping the central periods:
   kw2 <- kw_tests(markets, ~treat, kw_frml, filter_frml)
-  kw2
-  
-  kend <- corr_test(markets, ~treat, ~ pavg + period)
+
+  # Kendall correlation tests
+  kend_frml <- f_interp(~uq(var) + period)
+  print(kend_frml)
+  kend <- corr_test(markets, ~treat, kend_frml)
   kend
 }
 
