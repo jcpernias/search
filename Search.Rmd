@@ -137,7 +137,6 @@ trend_tests <- function(var, group, filter_frml) {
 
   # Kendall correlation tests
   kend_frml <- f_interp(~uq(var) + period)
-  print(kend_frml)
   kend <- corr_test(markets, ~treat, kend_frml)
   kend
 }
