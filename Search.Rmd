@@ -138,47 +138,16 @@ trend_tests <- function(var, group, filter_frml) {
   # Kendall correlation tests
   kend_frml <- f_interp(~uq(var) + period)
   kend <- corr_tests(markets, ~treat, kend_frml)
-  kend
+  
+  left_join(kw1, kw2, by = "treat") %>%
+    rename(kw_all = statistic.x, pv_kw_all = p.value.x, 
+           kw_drop = statistic.y, pv_kw_drop = p.value.y) %>%
+    left_join(kend, by = "treat") %>%
+    rename(kendall = estimate, pv_kendall = p.value)
 }
 
-trend_tests(~pavg,  ~group, ~ group != 2)
 ```
 
-
-```{r}
-kw1 <- markets %>% group_by(treat) %>% 
-  do(tidy(kruskal.test(pavg ~ group, data = .))) %>%
-  select(-one_of(c("method", "parameter")))
-```
-
-Kruskal-Wallis dropping the central periods:
-
-```{r}
-kw2 <- filter(markets, group != 2) %>% group_by(treat) %>% 
-  do(tidy(kruskal.test(pavg ~ group, data = .))) %>%
-  select(-one_of(c("method", "parameter")))
-```
-
-Kendall correlation test:
-
-```{r}
-kend <- markets %>% group_by(treat) %>% 
-  do(tidy(cor.test(~ pavg + period, method = "kendall", data = .))) %>%
-  select(-one_of(c("method", "statistic", "alternative")))
-```
-
-
-Collect all tests in one table:
-
-```{r}
-trend_tests <- left_join(kw1, kw2, by = "treat") %>%
-  rename(kw_all = statistic.x, p_val_all = p.value.x, 
-         kw_drop = statistic.y, p_val_drop = p.value.y) %>%
-  left_join(kend, by = "treat") %>%
-  rename(kendall = estimate, p_val_kendall = p.value)
-
-kable(trend_tests, digits = 3)
-```
 
 
 ### Average market prices
@@ -193,42 +162,11 @@ Plots:
 ```
 
 
-Kruskal-Wallis using all periods:
-
-```{r}
-kw1 <- markets %>% group_by(treat) %>% 
-  do(tidy(kruskal.test(pavg ~ group, data = .))) %>%
-  select(-one_of(c("method", "parameter")))
-```
-
-
-Kruskal-Wallis dropping the central periods:
-
-```{r}
-kw2 <- filter(markets, group != 2) %>% group_by(treat) %>% 
-  do(tidy(kruskal.test(pavg ~ group, data = .))) %>%
-  select(-one_of(c("method", "parameter")))
-```
-
-Kendall correlation test:
-
-```{r}
-kend <- markets %>% group_by(treat) %>% 
-  do(tidy(cor.test(~ pavg + period, method = "kendall", data = .))) %>%
-  select(-one_of(c("method", "statistic", "alternative")))
-```
-
 
 Collect all tests in one table:
 
 ```{r}
-trend_tests <- left_join(kw1, kw2, by = "treat") %>%
-  rename(kw_all = statistic.x, p_val_all = p.value.x, 
-         kw_drop = statistic.y, p_val_drop = p.value.y) %>%
-  left_join(kend, by = "treat") %>%
-  rename(kendall = estimate, p_val_kendall = p.value)
-
-kable(trend_tests, digits = 3)
+kable(trend_tests(~pavg,  ~group, ~ group != 2), digits = 3)
 ```
 
 Conclusions:
@@ -249,41 +187,13 @@ ggplot(data = markets, mapping = aes(x = period, y = pmin)) +
 ```
 
 
-Kruskal-Wallis using all periods:
-
-```{r}
-kw1 <- markets %>% group_by(treat) %>% 
-  do(tidy(kruskal.test(pmin ~ group, data = .))) %>%
-  select(-one_of(c("method", "parameter")))
-```
-
-Kruskal-Wallis dropping the central periods:
-
-```{r}
-kw2 <- filter(markets, group != 2) %>% group_by(treat) %>% 
-  do(tidy(kruskal.test(pmin ~ group, data = .))) %>%
-  select(-one_of(c("method", "parameter")))
-```
-
-Kendall correlation test:
-
-```{r}
-kend <- markets %>% group_by(treat) %>% 
-  do(tidy(cor.test(~ pmin + period, method = "kendall", data = .))) %>%
-  select(-one_of(c("method", "statistic", "alternative")))
-```
 
 
 Collect all tests in one table:
 
 ```{r}
-trend_tests <- left_join(kw1, kw2, by = "treat") %>%
-  rename(kw_all = statistic.x, p_val_all = p.value.x, 
-         kw_drop = statistic.y, p_val_drop = p.value.y) %>%
-  left_join(kend, by = "treat") %>%
-  rename(kendall = estimate, p_valk_kendall = p.value)
+kable(trend_tests(~pmin,  ~group, ~ group != 2), digits = 3)
 
-kable(trend_tests, digits = 3)
 ```
 
 
