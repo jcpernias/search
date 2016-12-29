@@ -116,7 +116,7 @@ kw_tests <- function(data, by_var, frml, filter_frml = NULL) {
 }
 
 
-corr_test <- function(data, by_var, frml, method = "kendall") {
+corr_tests <- function(data, by_var, frml, method = "kendall") {
   inner <- function(data, frml, method) {
     f_env(frml) <- environment()
     cor.test(frml, method = method, data = data)
@@ -137,7 +137,7 @@ trend_tests <- function(var, group, filter_frml) {
 
   # Kendall correlation tests
   kend_frml <- f_interp(~uq(var) + period)
-  kend <- corr_test(markets, ~treat, kend_frml)
+  kend <- corr_tests(markets, ~treat, kend_frml)
   kend
 }
 
