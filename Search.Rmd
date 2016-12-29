@@ -166,6 +166,11 @@ dstats <- markets %>% group_by(treat) %>%
             'MIn p: sd' = sd(pmin))
 
 kable(dstats, digits = 3)
+
+# t-tests on means of average prices
+markets %>% group_by(treat) %>% 
+  do(tidy(t.test(.$pavg, mu = mom_db$pavg_mean[first(.$treat)]))) %>%
+  select(treat, statistic, p.value)
 ```
 
 Descriptive statistics for observations from the 10 last periods:
