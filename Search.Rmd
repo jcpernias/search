@@ -124,7 +124,8 @@ moments <- function(n, k, phi, treat_id, selective) {
          pmin_mean = pmin_mom$mu, pmin_sd = pmin_mom$sd)  
 }
 
-treat_db %>% pmap_df(moments)
+mom_db <- treat_db %>% pmap_df(moments)
+kable(mom_db, digits = 3)
 ```
 
 
