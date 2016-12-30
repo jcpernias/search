@@ -24,15 +24,16 @@ The variables are stored in three files: one for treatment design variables, `./
 treat_db <- read_csv('./data/treatments.csv', col_types = "ilii") %>%
   mutate(phi = if_else(selective, 1, k/n))
 
-kable(treat_db, align = "cccc")
+kable(treat_db, digits = 3)
 ```
 
 Variables:
 
-- `treat_id`: the treatment id; an integer.
-- `selective`: true if the treatment's search engine is biased; a logical. 
-- `n`: number of firms in the market; an integer.
-- `k`: number of firms in the index, $k \leq n$; an integer.
+- `treat_id`: the treatment id.
+- `selective`: `TRUE` if the treatment's search engine is selective. 
+- `n`: number of firms in each treatment's market.
+- `k`: number of firms in the index, $k \leq n$.
+- `phi`: the ex-ante probability of being included in the index for the fims that actually ended up being indexed. 
 
 ## Lotteries results
 ```{r}
