@@ -66,6 +66,24 @@ Variables:
 
 ## Theoretical distributions
 
+The equilibrium theoretical distribution is given by
+\begin{equation*}
+F(p; n, k, \phi, \lambda) = 
+\begin{cases}
+0 & 0 \leq p < l \\
+1 - \left[
+  \dfrac{1}{n \phi}
+  \dfrac{\lambda}{1 - \lambda}
+  \dfrac{1 - p}{p}
+\right]^{1/(k-1)}
+& l \leq p \leq 1 
+\end{cases}
+\end{equation*}
+where 
+\begin{equation*}
+l = \frac{\lambda}{\lambda + (1 - \lambda) n \phi}
+\end{equation*}
+
 ```{r}
 Fsearch <- function(n, k, phi, lambda = 1 / 2) {
   const <- (lambda / (1 - lambda)) / (n * phi)
