@@ -287,7 +287,7 @@ trend_plots <- function(var) {
   ggplot(data = markets, mapping = aes_(x = ~period, y = var)) +
     geom_point(size=0.4) +
     facet_wrap(ncol=2, ~ treat)  +
-    geom_smooth(method = "lm", size = 0.4)
+    geom_smooth(method = "lm", size = 0.6)
 }
 ```
 
