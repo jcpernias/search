@@ -422,14 +422,9 @@ pmin_hyp <- list(g1 = c(4, 4, 4, 5, 1, 2, 6, 8, 8, 3, 8, 6, 8, 3),
 ```{r}
 
 pv_to_stars <- function(pv) {
-  ans <- rep_along(pv, "  ")
-  idx <- pv <= 0.01
-  ans[idx] <- "**"
-
-  idx <- pv <= 0.05 & pv > 0.01
-  ans[idx] <- "* "
-  
-  ans
+  cvt <- c(" ", "*")
+  paste0(cvt[(pv <= 0.05) + 1],
+         cvt[(pv <= 0.01) + 1])
 }
 
 fmt_tests <- function(g1, g2, H1, statistic, p.value, prefix = "eps_") {
