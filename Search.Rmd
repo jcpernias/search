@@ -44,7 +44,7 @@ glimpse(subjects_db)
 Variables:
 
 - `subject_id`: the subject id; an integer.
-- `p1, p2, p3, p4`: subject's lottery choices in each of the four panels; a double between 0.0 an 1.0. 
+- `p1, p2, p3, p4`: subject's lottery choices in each of the four panels; a double between 0.0 and 1.0. 
 
 
 ## Prices 
