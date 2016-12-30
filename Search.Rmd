@@ -43,7 +43,7 @@ glimpse(subjects_db)
 
 Variables:
 
-- `subject_id`: the subject id; an integer.
+- `subject_id`: the subject id.
 - `p1, p2, p3, p4`: subject's lottery choices in each of the four panels; a double between 0.0 and 1.0. 
 
 
@@ -55,11 +55,11 @@ glimpse(prices_db)
 
 Variables:
 
-- `treat_id`: treatment id; an integer.
-- `market_id`: market id; an integer.
-- `period`: time period; an integer.
-- `subject_id`: subject id; an integer.
-- `indexed`: true if the price is included in the index; a logical.
+- `treat_id`: treatment id.
+- `market_id`: market id.
+- `period`: time period.
+- `subject_id`: subject id.
+- `indexed`: `TRUE` if the price is included in the index.
 - `price`: the price; a double between 0.0 and 1.0.
 
 # Results
