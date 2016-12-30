@@ -421,33 +421,61 @@ pmin_hyp <- list(g1 = c(4, 4, 4, 5, 1, 2, 6, 8, 8, 3, 8, 6, 8, 3),
 
 ```{r}
 
+pv_to_stars <- function(pv) {
+  ans <- rep_along(pv, "  ")
+  idx <- pv <= 0.01
+  ans[idx] <- "**"
+
+  idx <- pv <= 0.05 & pv > 0.01
+  ans[idx] <- "* "
+  
+  ans
+}
+
 fmt_tests <- function(g1, g2, H1, statistic, p.value, prefix = "eps_") {
   cvt <- c("less" = " < ", "greater" = " > ", "two.sided" = " != ")
-  H0str <- paste(prefix, g1, " = ", prefix, g2, sep = "")
   H1str <- paste(prefix, g1, cvt[H1], prefix, g2, sep = "")
-  tibble(H0 = H0str, H1 = H1str, stat = statistic, pv = p.value)
+  tibble(H1 = H1str, stat = statistic, pv = pv_to_stars(p.value))
 }
 
 pmap_df(pavg_hyp, pavg_map, data = markets, var.equal = TRUE) %>%
   pmap_df(fmt_tests) %>%
-  kable(digits = 3)
+  kable(digits = 2, col.names = c("H1", "t", ""))
 ```
 
 ```{r}
-pmap_df(pmin_hyp, pmin_map, data = markets, var.equal = TRUE)
+pmap_df(pmin_hyp, pmin_map, data = markets, var.equal = TRUE) %>%
+  pmap_df(fmt_tests, prefix = "mu_") %>%
+  kable(digits = 2, col.names = c("H1", "t", ""))
+```
 
+```{r}
 pmap_df(pavg_hyp, pavg_map, data = markets, exact = FALSE, 
-        test_func = wilcox.test)
+        test_func = wilcox.test) %>%
+  pmap_df(fmt_tests) %>%
+  kable(digits = 3, col.names = c("H1", "W", ""))
+```
 
+```{r}
 pmap_df(pmin_hyp, pmin_map, data = markets, exact = FALSE, 
-        test_func = wilcox.test)
+        test_func = wilcox.test) %>%
+  pmap_df(fmt_tests, prefix = "mu_") %>%
+  kable(digits = 2, col.names = c("H1", "W", ""))
+```
 
+```{r}
 markets3 <- filter(markets, group == 3)
 
 pmap_df(pavg_hyp, pavg_map, data = markets3, exact = FALSE, 
-        test_func = wilcox.test)
+        test_func = wilcox.test) %>%
+  pmap_df(fmt_tests) %>%
+  kable(digits = 2, col.names = c("H1", "W (last)", ""))
+```
 
+```{r}
 pmap_df(pmin_hyp, pmin_map, data = markets3, exact = FALSE,
-        test_func = wilcox.test)
+        test_func = wilcox.test) %>%
+  pmap_df(fmt_tests, prefix = "mu_") %>%
+  kable(digits = 2, col.names = c("H1", "W (last)", ""))
 ```
 
