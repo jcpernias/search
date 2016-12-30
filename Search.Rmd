@@ -3,7 +3,6 @@ title: "Bias and Size Effects of Price-Comparison Platforms: Theory and Experime
 output:
   pdf_document: 
     number_sections: true
-    df_print: kable
   html_document: default
 ---
 
@@ -292,7 +291,7 @@ trend_plots <- function(var) {
 ```
 
 
-We also use Kruskal-Wallis tests to test the hypothesis that the mean of expected prices is the same across all periods. In order to do so, we divide the sample in three groups of 10 periods each. We perform two tests. One tests the null hypothesis of the three periods having the same mean. The other tests the null that the mean of the first periods is the same than the mean of the last periods. Finally, we test that the prices are associated with a trend. We use the Kendall correlation coefficient in order to allow for possible nonlinear association.  
+We also use Kruskal-Wallis tests to test the hypothesis that the mean of expected prices is the same across all periods. In order to do so, we divide the sample in three groups of 10 periods each. We perform two tests. One tests the null hypothesis that the three periods having the same mean. The other tests the null that the mean of the first periods is the same than the mean of the last periods. Finally, we test that the prices are associated with a trend. We use the Kendall correlation coefficient in order to allow for possible nonlinear association.  
 
 
 ```{r}
@@ -418,9 +417,23 @@ pmin_hyp <- list(g1 = c(4, 4, 4, 5, 1, 2, 6, 8, 8, 3, 8, 6, 8, 3),
                  g2 = c(1, 5, 7, 7, 2, 7, 4, 4, 6, 1, 3, 5, 7, 2),
                  H1 = c(rep("less", 5), "two.sided", rep("less", 8)))
 
+```
 
-pmap_df(pavg_hyp, pavg_map, data = markets, var.equal = TRUE)
+```{r}
 
+fmt_tests <- function(g1, g2, H1, statistic, p.value, prefix = "eps_") {
+  cvt <- c("less" = " < ", "greater" = " > ", "two.sided" = " != ")
+  H0str <- paste(prefix, g1, " = ", prefix, g2, sep = "")
+  H1str <- paste(prefix, g1, cvt[H1], prefix, g2, sep = "")
+  tibble(H0 = H0str, H1 = H1str, stat = statistic, pv = p.value)
+}
+
+pmap_df(pavg_hyp, pavg_map, data = markets, var.equal = TRUE) %>%
+  pmap_df(fmt_tests) %>%
+  kable(digits = 3)
+```
+
+```{r}
 pmap_df(pmin_hyp, pmin_map, data = markets, var.equal = TRUE)
 
 pmap_df(pavg_hyp, pavg_map, data = markets, exact = FALSE, 
@@ -436,8 +449,5 @@ pmap_df(pavg_hyp, pavg_map, data = markets3, exact = FALSE,
 
 pmap_df(pmin_hyp, pmin_map, data = markets3, exact = FALSE,
         test_func = wilcox.test)
-
-
-
 ```
 
