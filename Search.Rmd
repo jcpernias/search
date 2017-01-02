@@ -29,7 +29,7 @@ kable(treat_db, digits = 3)
 Variables:
 
 - `treat_id`: the treatment id.
-- `selective`: `TRUE` if the treatment's search engine is selective. 
+- `selective`: `TRUE` if the treatment's platform is selective. 
 - `n`: number of firms in each treatment's market.
 - `k`: number of firms in the index, $k \leq n$.
 - `phi`: the ex-ante probability of being included in the index for the fims that actually ended up being indexed. 
@@ -61,9 +61,36 @@ Variables:
 - `indexed`: `TRUE` if the price is included in the index.
 - `price`: the price; a double between 0.0 and 1.0.
 
-# Results
+## Sample
 
-## Theoretical distributions
+The first 20 periods are dropped from the sample. Two new price variables:
+
+- Available prices: all prices from that could be indexed, i.e., all prices in unselective coverage treatments and those from indexed vendors in selective coverage treatments; `pavail`. Average market prices are based on this variable.
+- Indexed prices: only the prices of indexed vendors in every treatment; `pindex`. The minimum of these prices in each market is the price paid by shoppers. 
+
+
+
+```{r}
+smpl <- left_join(prices_db, treat_db, by = 'treat_id') %>% 
+  filter(period > 20) %>%
+  mutate(pavail = if_else(!selective | indexed, price, NA_real_),
+         pindex = if_else(indexed, price, NA_real_))
+```
+
+Compute average market prices and average prices paid by shoppers. Also, create the `part` variable. It will be used later to test for trends. 
+
+```{r}
+markets <- smpl %>% group_by(market_id) %>%
+  summarise(treat = first(treat_id),
+            period = first(period),
+            pavg = mean(pavail, na.rm = TRUE),
+            pmin = min(pindex, na.rm = TRUE)) %>%
+  mutate(part = as.integer(floor((period  - 1) / 10) - 1))
+```
+
+
+
+# Theoretical distributions
 
 The equilibrium theoretical distribution is given by
 \begin{equation*}
@@ -179,33 +206,119 @@ kable(mom_db, digits = 3)
 ```
 
 
-## Sample
 
-The first 20 periods are dropped from the sample. Two new price variables:
 
-- Available prices: all prices from that could be indexed, i.e., all prices in unselective coverage treatments and those from indexed vendors in selective coverage treatments; `pavail`. Average market prices are based on this variable.
-- Indexed prices: only the prices of indexed vendors in every treatment; `pindex`. The minimum of these prices in each market is the price paid by shoppers. 
+# Results
 
+## Trends
+
+We use plots in order to find evidence on the presence of trends in the expected prices. 
+
+```{r}
+trend_plots <- function(var) {
+  ggplot(data = markets, mapping = aes_(x = ~period, y = var)) +
+    geom_point(size=0.4) +
+    facet_wrap(ncol=2, ~ treat)  +
+    geom_smooth(method = "lm", size = 0.6)
+}
+```
+
+
+We also use Kruskal-Wallis tests to test the hypothesis that the mean of expected prices is the same across all periods. In order to do so, we divide the sample in three groups of 10 periods each. We perform two tests. One tests the null hypothesis that the three periods having the same mean. The other tests the null that the mean of the first periods is the same than the mean of the last periods. Finally, we test that the prices are associated with a trend. We use the Kendall correlation coefficient in order to allow for possible nonlinear association.  
 
 
 ```{r}
-smpl <- left_join(prices_db, treat_db, by = 'treat_id') %>% 
-  filter(period > 20) %>%
-  mutate(pavail = if_else(!selective | indexed, price, NA_real_),
-         pindex = if_else(indexed, price, NA_real_))
+# Compute Kruskal-Wallis tests: 
+# - data: data set 
+# - by_var: a rhs formula indicating a variable; the data set is 
+#           sliced according to this variable and a  test is performed
+#           in each slice.
+# - frml: a rhs formula; the variable being tested
+# - filter_frml: a condition to filter the data set
+kw_tests <- function(data, by_var, frml, filter_frml = NULL) {
+  if (!is.null(filter_frml))
+    data <- filter_(data, filter_frml)
+  data %>% group_by_(by_var) %>% 
+    do(tidy(kruskal.test(frml, data = .))) %>%
+         select(-one_of(c("method", "parameter")))
+}
+
+
+corr_tests <- function(data, by_var, frml, method = "kendall") {
+  inner <- function(data, frml, method) {
+    f_env(frml) <- environment()
+    cor.test(frml, method = method, data = data)
+  }
+  
+  data %>% group_by_(by_var) %>% 
+    do(tidy(inner(., frml, method))) %>%
+#    mutate(pv = pv_to_stars(p.value)) %>%
+    select(-one_of(c("method", "statistic", "alternative"))) 
+}
+
+trend_tests <- function(var, group, filter_frml) {
+  kw_frml <- f_new(uq(group), uq(var))
+  # Kruskal-Wallis using all periods
+  kw1 <- kw_tests(markets, ~treat, kw_frml)
+  
+  # Kruskal-Wallis dropping the central periods:
+  kw2 <- kw_tests(markets, ~treat, kw_frml, filter_frml)
+
+  # Kendall correlation tests
+  kend_frml <- f_interp(~uq(var) + period)
+  kend <- corr_tests(markets, ~treat, kend_frml)
+  
+  # Bind the three tables; rename the columns.
+  left_join(kw1, kw2, by = "treat") %>%
+    rename(kw_all = statistic.x, pv_kw_all = p.value.x, 
+           kw_drop = statistic.y, pv_kw_drop = p.value.y) %>%
+    left_join(kend, by = "treat") %>%
+    rename(kendall = estimate, pv_kendall = p.value)
+}
 ```
 
-Compute average market prices and average prices paid by shoppers. Also, create the `groups` variable. It will be used later to test for trends. 
+
+
+### Average market prices
+
+Plots:
 
 ```{r}
-markets <- smpl %>% group_by(market_id) %>%
-  summarise(treat = first(treat_id),
-            period = first(period),
-            pavg = mean(pavail, na.rm = TRUE),
-            pmin = min(pindex, na.rm = TRUE)) %>%
-  mutate(group = as.integer(floor((period  - 1) / 10) - 1))
+trend_plots(~pavg)
 ```
 
+
+Collect all tests in one table:
+
+```{r}
+kable(trend_tests(~pavg,  ~part, ~ part != 2), digits = 3)
+```
+
+Conclusions:
+
+- Apart from Treatment 1, there is little evidence on the presence of trends in the experimental data. 
+- Although the tests indicate, at the 5% significance level, the presence of a trend in Treatment 1, the strength of this trend is small, as measured by the Kendall correlation coefficient.
+
+### Minimum market prices
+
+
+Plots:
+
+```{r}
+trend_plots(~pmin)
+```
+
+
+
+
+Collect all tests in one table:
+
+```{r}
+kable(trend_tests(~pmin,  ~part, ~ part != 2), digits = 3)
+
+```
+
+## Descriptive statistics
 Descriptive statistics reported on Table 1:
 
 ```{r}
@@ -250,7 +363,7 @@ mean_tests(left_join(markets, mom_db, by = "treat"),
 Descriptive statistics for observations from the 10 last periods:
 
 ```{r}
-dstats <- filter(markets, group == 3) %>% 
+dstats <- filter(markets, part == 3) %>% 
   group_by(treat) %>%
   summarise('Avg p: mean' = mean(pavg),
             'Avg p: sd' = sd(pavg),
@@ -261,7 +374,7 @@ kable(dstats, digits = 3)
 ```
 
 ```{r}
-mean_tests(left_join(filter(markets, group == 3),
+mean_tests(left_join(filter(markets, part == 3),
                      mom_db, by = "treat"), 
            var = ~pavg - pavg_mean,
            by_var = ~treat) %>%
@@ -269,121 +382,13 @@ mean_tests(left_join(filter(markets, group == 3),
 ```
 
 ```{r}
-mean_tests(left_join(filter(markets, group == 3),
+mean_tests(left_join(filter(markets, part == 3),
                      mom_db, by = "treat"), 
            var = ~pmin - pmin_mean,
            by_var = ~treat) %>%
   kable(digits = 3)
 ```
 
-
-## Trends
-
-We use plots in order to find evidence on the presence of trends in the expected prices. 
-
-```{r}
-trend_plots <- function(var) {
-  ggplot(data = markets, mapping = aes_(x = ~period, y = var)) +
-    geom_point(size=0.4) +
-    facet_wrap(ncol=2, ~ treat)  +
-    geom_smooth(method = "lm", size = 0.6)
-}
-```
-
-
-We also use Kruskal-Wallis tests to test the hypothesis that the mean of expected prices is the same across all periods. In order to do so, we divide the sample in three groups of 10 periods each. We perform two tests. One tests the null hypothesis that the three periods having the same mean. The other tests the null that the mean of the first periods is the same than the mean of the last periods. Finally, we test that the prices are associated with a trend. We use the Kendall correlation coefficient in order to allow for possible nonlinear association.  
-
-
-```{r}
-# Compute Kruskal-Wallis tests: 
-# - data: data set 
-# - by_var: a rhs formula indicating a variable; the data set is 
-#           sliced according to this variable and a  test is performed
-#           in each slice.
-# - frml: a rhs formula; the variable being tested
-# - filter_frml: a condition to filter the data set
-kw_tests <- function(data, by_var, frml, filter_frml = NULL) {
-  if (!is.null(filter_frml))
-    data <- filter_(data, filter_frml)
-  data %>% group_by_(by_var) %>% 
-    do(tidy(kruskal.test(frml, data = .))) %>%
-         select(-one_of(c("method", "parameter")))
-}
-
-
-corr_tests <- function(data, by_var, frml, method = "kendall") {
-  inner <- function(data, frml, method) {
-    f_env(frml) <- environment()
-    cor.test(frml, method = method, data = data)
-  }
-  
-  data %>% group_by_(by_var) %>% 
-    do(tidy(inner(., frml, method))) %>%
-    select(-one_of(c("method", "statistic", "alternative")))
-}
-
-trend_tests <- function(var, group, filter_frml) {
-  kw_frml <- f_new(uq(group), uq(var))
-  # Kruskal-Wallis using all periods
-  kw1 <- kw_tests(markets, ~treat, kw_frml)
-  
-  # Kruskal-Wallis dropping the central periods:
-  kw2 <- kw_tests(markets, ~treat, kw_frml, filter_frml)
-
-  # Kendall correlation tests
-  kend_frml <- f_interp(~uq(var) + period)
-  kend <- corr_tests(markets, ~treat, kend_frml)
-  
-  # Bind the three tables; rename the columns.
-  left_join(kw1, kw2, by = "treat") %>%
-    rename(kw_all = statistic.x, pv_kw_all = p.value.x, 
-           kw_drop = statistic.y, pv_kw_drop = p.value.y) %>%
-    left_join(kend, by = "treat") %>%
-    rename(kendall = estimate, pv_kendall = p.value)
-}
-
-```
-
-
-
-### Average market prices
-
-Plots:
-
-```{r}
-trend_plots(~pavg)
-```
-
-
-Collect all tests in one table:
-
-```{r}
-kable(trend_tests(~pavg,  ~group, ~ group != 2), digits = 3)
-```
-
-Conclusions:
-
-- Apart from Treatment 1, there is little evidence on the presence of trends in the experimental data. 
-- Although the tests indicate, at the 5% significance level, the presence of a trend in Treatment 1, the strength of this trend is small, as measured by the Kendall correlation coefficient.
-
-### Minimum market prices
-
-
-Plots:
-
-```{r}
-trend_plots(~pmin)
-```
-
-
-
-
-Collect all tests in one table:
-
-```{r}
-kable(trend_tests(~pmin,  ~group, ~ group != 2), digits = 3)
-
-```
 
 
 ## Tests
@@ -459,7 +464,7 @@ pmap_df(pmin_hyp, pmin_map, data = markets, exact = FALSE,
 ```
 
 ```{r}
-markets3 <- filter(markets, group == 3)
+markets3 <- filter(markets, part == 3)
 
 pmap_df(pavg_hyp, pavg_map, data = markets3, exact = FALSE, 
         test_func = wilcox.test) %>%
