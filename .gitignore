@@ -1,11 +1,10 @@
 .DS_Store
-
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
-
 OLD
 data
 *.html
 *.pdf
+Paper
