@@ -479,3 +479,51 @@ pmap_df(pmin_hyp, pmin_map, data = markets3, exact = FALSE,
   kable(digits = 2, col.names = c("H1", "W (last)", ""))
 ```
 
+
+```{r fig.height=8.5 }
+alpha <- 0.01
+
+# Taken from <http://www.stat.umn.edu/geyer/old/5601/examp/kolmogorov.html#one-ci>
+pksone <- function(x) {
+  k <- seq(1:20)
+  1 + 2 * sum( (-1)^k * exp(- 2 * k^2 * x^2))
+}
+
+qksone <- function(alpha) {
+  if (alpha > 0.5)
+    stop("don't do less than 50% confidence")
+  foo <- function(x) pksone(x) - 1 + alpha
+  uniroot(foo, c(0.5, 10), tol = 1e-8)
+}
+
+Ka <- qksone(alpha)$root
+
+
+plots_df <- filter(smpl, !is.na(pavail)) %>% 
+  select(treat_id, period, p = pavail)
+
+cv_df <- plots_df %>% group_by(treat_id) %>% 
+  summarise(cv = Ka / sqrt(n()))
+
+emp_dist <- function(data) {
+  n <- NROW(data)
+  cv <- Ka / sqrt(n) 
+  dist <- ecdf(data$p)
+  x <- knots(dist)
+  y <- dist(x)
+  lower <- pmax(y - cv, 0)
+  upper <- pmin(y + cv, 1)
+  list(x = x, y = y,ylo = lower,yhi = upper)
+}
+
+ecdf_df <- plots_df %>% 
+  group_by(treat_id) %>% 
+  do(as_data_frame(emp_dist(.)))
+
+ggplot(data = ecdf_df, aes(x = x, y = y)) +
+  geom_step() +
+  geom_ribbon(aes(ymin = ylo, ymax = yhi, alpha = 1)) +
+  facet_wrap(ncol = 3, ~ treat_id) + 
+  coord_fixed(ratio = 1)
+```
+
