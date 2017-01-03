@@ -505,10 +505,9 @@ plots_df <- filter(smpl, !is.na(pavail)) %>%
 cv_df <- plots_df %>% group_by(treat_id) %>% 
   summarise(cv = Ka / sqrt(n()))
 
-emp_dist <- function(data) {
-  n <- NROW(data)
-  cv <- Ka / sqrt(n) 
-  dist <- ecdf(data$p)
+emp_dist <- function(var) {
+  cv <- Ka / sqrt(length(var)) 
+  dist <- ecdf(var)
   x <- knots(dist)
   y <- dist(x)
   lower <- pmax(y - cv, 0)
@@ -518,12 +517,14 @@ emp_dist <- function(data) {
 
 ecdf_df <- plots_df %>% 
   group_by(treat_id) %>% 
-  do(as_data_frame(emp_dist(.)))
+  do(as_data_frame(emp_dist(.$p)))
 
 ggplot(data = ecdf_df, aes(x = x, y = y)) +
   geom_step() +
   geom_ribbon(aes(ymin = ylo, ymax = yhi, alpha = 1)) +
-  facet_wrap(ncol = 3, ~ treat_id) + 
-  coord_fixed(ratio = 1)
+  facet_wrap(ncol = 3, ~ treat_id) +
+  theme(legend.position="none") +
+  coord_fixed(ratio = 1) + 
+  xlab("p") + ylab("cdf")
 ```
 
