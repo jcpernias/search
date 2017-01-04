@@ -127,9 +127,9 @@ markets_db <- smpl_db %>% group_by(market_id) %>%
 
 
 
-# Theoretical distributions
+# Equilibrium price distributions
 
-The equilibrium theoretical distribution is given by
+The equilibrium price distribution is given by
 \begin{equation*}
 F(p; n, k, \phi, \lambda) = 
 \begin{cases}
@@ -147,32 +147,42 @@ where
 l = \frac{\lambda}{\lambda + (1 - \lambda) n \phi}
 \end{equation*}
 
-We use a closure to build the cdf for a given combination of parameters:
-
+The following function computes `l`, the lower limit of the support of the equlibrium distribution:
 ```{r}
 Fsearch_low <- function(n, k, phi, lambda = 1 / 2) {
   lambda / (lambda + (1 - lambda) * n * phi)
 }
+```
 
+
+We use a function factory to build the cdf for a given combination of parameters:
+
+```{r}
 Fsearch <- function(n, k, phi, lambda = 1 / 2) {
+  # These are the same for all invokations
   const <- (lambda / (1 - lambda)) / (n * phi)
   low <- Fsearch_low(n, k, phi, lambda)
   pow <- 1 / (k - 1)
+  
+  # Return a function that computes the cdf
   function(p) {
-    ans <- rep_along(p, 0)
+    # Handle vector arguments. Default case: p <= l
+    prob <- rep_along(p, 0)
 
+    # Second case: p >= 1
     idx <- p >= 1.0
     if (any(idx)) {
-      ans[idx] <- 1.0
+      prob[idx] <- 1.0
     }
 
+    # Third case: l < p < 1
     idx <- p > low & p < 1.0
     if(any(idx)) {
       pi <- p[idx]
-      ans[idx] <- 1 - (const * (1 - pi) / pi) ^ pow
+      prob[idx] <- 1 - (const * (1 - pi) / pi) ^ pow
     }
-
-    ans
+   
+    prob
   }
 }
 ```
@@ -181,7 +191,7 @@ As prices are non-negative random variables, we will compute their expectation a
 \begin{equation*}
   E(p) = \int_{0}^{\infty} 1 - F(p)\; dp
 \end{equation*}
-We will use the following functional operator to obtain the complement of a cdf:
+We will use the following functional operator to obtain a function that computes the complement of a cdf:
 
 ```{r}
 compl_cdf <- function(cdf) {
@@ -209,7 +219,7 @@ Finally, the cdf of the minimum of $n$ random variables, all of them with cdf $F
 \begin{equation*}
   G(p) = 1 - \big[ 1 - F(p) \big]^n
 \end{equation*}
-The next functional operator will be used:
+The next functional operator will be useful:
 
 ```{r}
 func_pow <- function(func, pow) {
@@ -219,19 +229,26 @@ func_pow <- function(func, pow) {
 }
 ```
 
-The following function computes the mean and standard deviation of average market prices, `pavg`, and minimum market prices, `pmin`:
+Using the above results, the following function numerically evaluates some moments of the expected and minimum market price distributions. It computes the mean and standard deviation of the equilibrium distribution of average market prices, `pavg`, and minimum market prices, `pmin`:
 
 ```{r}
-moments <- function(n, k, phi, treat_id, selective) {
+eq_moments <- function(n, k, phi, treat_id, selective) {
   mean_sd <- function(ccdf, num = 1) {
-    EX <- integrate(ccdf, lower = 0, upper = 1)
-    EX2 <- integrate(func_arg(ccdf), lower = 0, upper = 1)
-    VX <-  2 * EX2$value - EX$value^2
-    list(mu = EX$value, sd = sqrt(VX) / sqrt(num))
+    # E(X)
+    EX <- integrate(ccdf, lower = 0, upper = 1)$value
+    # E(X^2)
+    EX2 <- 2 * integrate(func_arg(ccdf), lower = 0, upper = 1)$value
+    # Var(X)
+    VX <-  EX2 - EX^2
+    list(mu = EX, sd = sqrt(VX) / sqrt(num))
   }
   
+  # Complement of the cdf
   ccdf <- compl_cdf(Fsearch(n = n, k = k, phi = phi))
+  
+  # In selective treatments only k prices are averaged.
   pavg_mom <- mean_sd(ccdf, if_else(selective, k, n))
+  
   pmin_mom <- mean_sd(func_pow(ccdf, k))
   tibble(treat = treat_id, 
          pavg_mean = pavg_mom$mu, pavg_sd = pavg_mom$sd,
@@ -239,11 +256,11 @@ moments <- function(n, k, phi, treat_id, selective) {
 }
 ```
 
-Table with moments of the equilibrium price distributions for the 8 treatments:
+Table with moments of the equilibrium price distributions for the 8 treatments. These results are reported in Table 1 of the paper.
 
 ```{r}
-mom_db <- treat_db %>% pmap_df(moments)
-kable(mom_db, digits = 3, 
+mom_df <- treat_db %>% pmap_df(eq_moments)
+kable(mom_df, digits = 3, 
       col.names = c("Treatment", 
                     "pavg: mean", "pavg: sd",
                     "pmin: mean", "pmin: sd"))
@@ -390,14 +407,14 @@ mean_tests <- function(data, var, by_var, ...) {
 t-tests on means of average prices:
 
 ```{r}
-mean_tests(left_join(markets_db, mom_db, by = "treat"), 
+mean_tests(left_join(markets_db, mom_df, by = "treat"), 
            var = ~pavg - pavg_mean,
            by_var = ~treat) %>%
   kable(digits = 3)
 ```
 
 ```{r}
-mean_tests(left_join(markets_db, mom_db, by = "treat"), 
+mean_tests(left_join(markets_db, mom_df, by = "treat"), 
            var = ~pmin - pmin_mean,
            by_var = ~treat) %>%
   kable(digits = 3)
@@ -419,7 +436,7 @@ kable(dstats, digits = 3)
 
 ```{r}
 mean_tests(left_join(filter(markets_db, part == 3),
-                     mom_db, by = "treat"), 
+                     mom_df, by = "treat"), 
            var = ~pavg - pavg_mean,
            by_var = ~treat) %>%
   kable(digits = 3)
@@ -427,7 +444,7 @@ mean_tests(left_join(filter(markets_db, part == 3),
 
 ```{r}
 mean_tests(left_join(filter(markets_db, part == 3),
-                     mom_db, by = "treat"), 
+                     mom_df, by = "treat"), 
            var = ~pmin - pmin_mean,
            by_var = ~treat) %>%
   kable(digits = 3)
