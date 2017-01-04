@@ -6,6 +6,8 @@ output:
   html_document: default
 ---
 
+# Introduction
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, comment = " ")
 library(gridExtra)
@@ -17,14 +19,22 @@ library(lazyeval)
 
 # Data
 
-The variables are stored in three files: one for treatment design variables, `./data/treatments.csv`; another for lotteries results, `./data/subjects.csv`; and, finally, one for prices, `./data/prices.csv`.
+The data from the experimental sessions described in the paper are stored in three files:
+
+- `./data/treatments.csv`: treatment design variables. 
+- `./data/subjects.csv`: lotteries results. 
+- `./data/prices.csv`: prices.
+
 
 ## Treatment design variables
+
+The variable `phi` is computed on the fly.
+
 ```{r}
 treat_db <- read_csv('./data/treatments.csv', col_types = "ilii") %>%
   mutate(phi = if_else(selective, 1, k/n))
 
-kable(treat_db, digits = 3)
+glimpse(treat_db)
 ```
 
 Variables:
@@ -36,6 +46,9 @@ Variables:
 - `phi`: the ex-ante probability of being included in the index for the fims that actually ended up being indexed. 
 
 ## Lotteries results
+
+The lotteries data are not used in this paper.
+
 ```{r}
 subjects_db <- read_csv('./data/subjects.csv', col_types = "idddd")
 glimpse(subjects_db)
@@ -48,6 +61,14 @@ Variables:
 
 
 ## Prices 
+
+- 8 treatments. 
+- 18 subjects participated in each treatment.
+- Each treatment run for 50 periods.
+- Each subject was randomly assigned to a market every period. Markets were composed of three or six subjects, depending on the treatment.
+- Before posting a price each subject knew the probability that its price could be indexed.
+- Each market participant posted a price. The firm with the lowest indexed price would sell to the shoppers. The other firms would only sell to their captive consumers.
+
 ```{r}
 prices_db <- read_csv('./data/prices.csv', col_types = "iiiild")
 glimpse(prices_db)
@@ -64,29 +85,44 @@ Variables:
 
 ## Sample
 
-The first 20 periods are dropped from the sample. Two new price variables:
+We first build the `smpl_db` database. The first 20 periods are dropped from the sample and never used in the statistical analyses. 
 
-- Available prices: all prices from that could be indexed, i.e., all prices in unselective coverage treatments and those from indexed vendors in selective coverage treatments; `pavail`. Average market prices are based on this variable.
-- Indexed prices: only the prices of indexed vendors in every treatment; `pindex`. The minimum of these prices in each market is the price paid by shoppers. 
+We compute a new categorical variable, `part`, that divide the remaining sample in three parts: the first 10 periods, the central 10 periods and the final 10 periods. This variable will be used later when testing for trends. 
 
+From data in the prices database, we also compute two new price variables:
 
+- `pindexable`: all prices that could be indexed, i.e., all prices in unselective coverage treatments and those from indexed vendors in selective coverage treatments. Average market prices are based on this variable. The plots of empirical distribution functions also use this variable.
+- `pindexed`: only the prices of indexed vendors in every treatment. The minimum of these prices in each market is the price paid by shoppers. 
 
 ```{r}
-smpl <- left_join(prices_db, treat_db, by = 'treat_id') %>% 
+smpl_db <- left_join(prices_db, treat_db, by = 'treat_id') %>% 
   filter(period > 20) %>%
-  mutate(pavail = if_else(!selective | indexed, price, NA_real_),
-         pindex = if_else(indexed, price, NA_real_))
+  mutate(pindexable = if_else(!selective | indexed, price, NA_real_),
+         pindexed = if_else(indexed, price, NA_real_),
+         part = as.integer(floor((period  - 1) / 10) - 1)) %>%
+  select(-one_of(c("selective", "n", "k", "phi")))
 ```
 
-Compute average market prices and average prices paid by shoppers. Also, create the `part` variable. It will be used later to test for trends. 
+We use the database `plots_db` for plotting distribution functions. This database is a simplified version of `smpl_db` database. We only keep the `treat_id`, `part` and `pindexable` variables, the latter simpl renamed `p`, and we drop all observations that correspond to firms not appearing in the index with probability 1:
 
 ```{r}
-markets <- smpl %>% group_by(market_id) %>%
+plots_db <- filter(smpl_db, !is.na(pindexable)) %>% 
+  select(treat_id, period, p = pindexable)
+```
+
+Most of the tests in this paper are about expected prices. The `markets_db` database contains two new variables built from price averages:
+
+- `pavg`: the expected market price, excluding the prices set by firms with no likelihood of being indexed.
+
+- `pmin`: the minimum of the indexed prices in each market.
+
+```{r}
+markets_db <- smpl_db %>% group_by(market_id) %>%
   summarise(treat = first(treat_id),
             period = first(period),
-            pavg = mean(pavail, na.rm = TRUE),
-            pmin = min(pindex, na.rm = TRUE)) %>%
-  mutate(part = as.integer(floor((period  - 1) / 10) - 1))
+            part = first(part),
+            pavg = mean(pindexable, na.rm = TRUE),
+            pmin = min(pindexed, na.rm = TRUE)) 
 ```
 
 
@@ -207,7 +243,10 @@ Table with moments of the equilibrium price distributions for the 8 treatments:
 
 ```{r}
 mom_db <- treat_db %>% pmap_df(moments)
-kable(mom_db, digits = 3)
+kable(mom_db, digits = 3, 
+      col.names = c("Treatment", 
+                    "pavg: mean", "pavg: sd",
+                    "pmin: mean", "pmin: sd"))
 ```
 
 
@@ -221,7 +260,7 @@ We use plots in order to find evidence on the presence of trends in the expected
 
 ```{r}
 trend_plots <- function(var) {
-  ggplot(data = markets, mapping = aes_(x = ~period, y = var)) +
+  ggplot(data = markets_db, mapping = aes_(x = ~period, y = var)) +
     geom_point(size=0.4) +
     facet_wrap(ncol=2, ~ treat)  +
     geom_smooth(method = "lm", size = 0.6)
@@ -264,14 +303,14 @@ corr_tests <- function(data, by_var, frml, method = "kendall") {
 trend_tests <- function(var, group, filter_frml) {
   kw_frml <- f_new(uq(group), uq(var))
   # Kruskal-Wallis using all periods
-  kw1 <- kw_tests(markets, ~treat, kw_frml)
+  kw1 <- kw_tests(markets_db, ~treat, kw_frml)
   
   # Kruskal-Wallis dropping the central periods:
-  kw2 <- kw_tests(markets, ~treat, kw_frml, filter_frml)
+  kw2 <- kw_tests(markets_db, ~treat, kw_frml, filter_frml)
 
   # Kendall correlation tests
   kend_frml <- f_interp(~uq(var) + period)
-  kend <- corr_tests(markets, ~treat, kend_frml)
+  kend <- corr_tests(markets_db, ~treat, kend_frml)
   
   # Bind the three tables; rename the columns.
   left_join(kw1, kw2, by = "treat") %>%
@@ -327,7 +366,7 @@ kable(trend_tests(~pmin,  ~part, ~ part != 2), digits = 3)
 Descriptive statistics reported on Table 1:
 
 ```{r}
-dstats <- markets %>% group_by(treat) %>%
+dstats <- markets_db %>% group_by(treat) %>%
   summarise('Avg p: mean' = mean(pavg),
             'Avg p: sd' = sd(pavg),
             'Min p: mean' = mean(pmin),
@@ -351,14 +390,14 @@ mean_tests <- function(data, var, by_var, ...) {
 t-tests on means of average prices:
 
 ```{r}
-mean_tests(left_join(markets, mom_db, by = "treat"), 
+mean_tests(left_join(markets_db, mom_db, by = "treat"), 
            var = ~pavg - pavg_mean,
            by_var = ~treat) %>%
   kable(digits = 3)
 ```
 
 ```{r}
-mean_tests(left_join(markets, mom_db, by = "treat"), 
+mean_tests(left_join(markets_db, mom_db, by = "treat"), 
            var = ~pmin - pmin_mean,
            by_var = ~treat) %>%
   kable(digits = 3)
@@ -368,7 +407,7 @@ mean_tests(left_join(markets, mom_db, by = "treat"),
 Descriptive statistics for observations from the 10 last periods:
 
 ```{r}
-dstats <- filter(markets, part == 3) %>% 
+dstats <- filter(markets_db, part == 3) %>% 
   group_by(treat) %>%
   summarise('Avg p: mean' = mean(pavg),
             'Avg p: sd' = sd(pavg),
@@ -379,7 +418,7 @@ kable(dstats, digits = 3)
 ```
 
 ```{r}
-mean_tests(left_join(filter(markets, part == 3),
+mean_tests(left_join(filter(markets_db, part == 3),
                      mom_db, by = "treat"), 
            var = ~pavg - pavg_mean,
            by_var = ~treat) %>%
@@ -387,7 +426,7 @@ mean_tests(left_join(filter(markets, part == 3),
 ```
 
 ```{r}
-mean_tests(left_join(filter(markets, part == 3),
+mean_tests(left_join(filter(markets_db, part == 3),
                      mom_db, by = "treat"), 
            var = ~pmin - pmin_mean,
            by_var = ~treat) %>%
@@ -443,33 +482,33 @@ fmt_tests <- function(g1, g2, H1, statistic, p.value, prefix = "eps_") {
   tibble(H1 = H1str, stat = statistic, pv = pv_to_stars(p.value))
 }
 
-pmap_df(pavg_hyp, pavg_map, data = markets, var.equal = TRUE) %>%
+pmap_df(pavg_hyp, pavg_map, data = markets_db, var.equal = TRUE) %>%
   pmap_df(fmt_tests) %>%
   kable(digits = 2, col.names = c("H1", "t", ""))
 ```
 
 ```{r}
-pmap_df(pmin_hyp, pmin_map, data = markets, var.equal = TRUE) %>%
+pmap_df(pmin_hyp, pmin_map, data = markets_db, var.equal = TRUE) %>%
   pmap_df(fmt_tests, prefix = "mu_") %>%
   kable(digits = 2, col.names = c("H1", "t", ""))
 ```
 
 ```{r}
-pmap_df(pavg_hyp, pavg_map, data = markets, exact = FALSE, 
+pmap_df(pavg_hyp, pavg_map, data = markets_db, exact = FALSE, 
         test_func = wilcox.test) %>%
   pmap_df(fmt_tests) %>%
   kable(digits = 3, col.names = c("H1", "W", ""))
 ```
 
 ```{r}
-pmap_df(pmin_hyp, pmin_map, data = markets, exact = FALSE, 
+pmap_df(pmin_hyp, pmin_map, data = markets_db, exact = FALSE, 
         test_func = wilcox.test) %>%
   pmap_df(fmt_tests, prefix = "mu_") %>%
   kable(digits = 2, col.names = c("H1", "W", ""))
 ```
 
 ```{r}
-markets3 <- filter(markets, part == 3)
+markets3 <- filter(markets_db, part == 3)
 
 pmap_df(pavg_hyp, pavg_map, data = markets3, exact = FALSE, 
         test_func = wilcox.test) %>%
@@ -501,9 +540,6 @@ qksone <- function(alpha) {
   uniroot(foo, c(0.5, 10), tol = 1e-8)$root
 }
 
-plots_df <- filter(smpl, !is.na(pavail)) %>% 
-  select(treat_id, period, p = pavail)
-
 emp_dist <- function(var) {
   cv <- qksone(alpha) / sqrt(length(var)) 
   dist <- ecdf(var)
@@ -514,7 +550,7 @@ emp_dist <- function(var) {
   list(x = x, y = y,ylo = lower,yhi = upper)
 }
 
-ecdf_df <- plots_df %>% 
+ecdf_df <- plots_db %>% 
   group_by(treat_id) %>% 
   do(as_data_frame(emp_dist(.$p))) 
 ```
@@ -583,7 +619,7 @@ p3 <- plot_pair(ecdf_df, 7, 8)
 grid.arrange(p1, p2, p3, ncol = 1)
 ```
 ```{r fig.height=8.5}
-ecdf_df3 <- filter(plots_df, period > 40) %>% 
+ecdf_df3 <- filter(plots_db, period > 40) %>% 
   group_by(treat_id) %>% 
   do(as_data_frame(emp_dist(.$p))) 
 
