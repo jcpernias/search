@@ -484,7 +484,7 @@ pmap_df(pmin_hyp, pmin_map, data = markets3, exact = FALSE,
 ```
 
 
-```{r fig.height=8.5 }
+```{r}
 alpha <- 0.01
 
 # Taken from <http://www.stat.umn.edu/geyer/old/5601/examp/kolmogorov.html#one-ci>
@@ -518,9 +518,22 @@ ecdf_df <- plots_df %>%
   do(as_data_frame(emp_dist(.$p)))
 ```
 
+```{r}
+eq_dist <- function(treat_id, n, k, phi, selective, lambda = 1 / 2) {
+  low <- Fsearch_low(n, k, phi, lambda)
+  x <- seq(low, 1, length.out = 128)
+  y <- Fsearch(n, k, phi, lambda)(x)
+  tibble(treat_id = treat_id, x = x, y = y)
+} 
+
+eq_df <- pmap_df(select(treat_db, -one_of("selective")), eq_dist)
+```
+
+
 ```{r fig.height=8.5 }
 
 ggplot(data = ecdf_df, aes(x = x, y = y)) +
+  geom_line(data = eq_df, aes(x = x, y = y), size = I(1)) +
   geom_step(aes(color=I("blue4")), size = I(1)) +
   geom_ribbon(aes(ymin = ylo, ymax = yhi, alpha = 1/20, 
                   fill = I("steelblue2"))) +
