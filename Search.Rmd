@@ -113,9 +113,13 @@ l = \frac{\lambda}{\lambda + (1 - \lambda) n \phi}
 We use a closure to build the cdf for a given combination of parameters:
 
 ```{r}
+Fsearch_low <- function(n, k, phi, lambda = 1 / 2) {
+  lambda / (lambda + (1 - lambda) * n * phi)
+}
+
 Fsearch <- function(n, k, phi, lambda = 1 / 2) {
   const <- (lambda / (1 - lambda)) / (n * phi)
-  low <- lambda / (lambda + (1 - lambda) * n * phi)
+  low <- Fsearch_low(n, k, phi, lambda)
   pow <- 1 / (k - 1)
   function(p) {
     ans <- rep_along(p, 0)
