@@ -515,7 +515,7 @@ emp_dist <- function(var) {
 
 ecdf_df <- plots_df %>% 
   group_by(treat_id) %>% 
-  do(as_data_frame(emp_dist(.$p)))
+  do(as_data_frame(emp_dist(.$p))) 
 ```
 
 ```{r}
@@ -533,13 +533,44 @@ eq_df <- pmap_df(select(treat_db, -one_of("selective")), eq_dist)
 ```{r fig.height=8.5 }
 
 ggplot(data = ecdf_df, aes(x = x, y = y)) +
-  geom_line(data = eq_df, aes(x = x, y = y), size = I(1)) +
-  geom_step(aes(color=I("blue4")), size = I(1)) +
+  geom_line(data = eq_df, aes(x = x, y = y, 
+                              color=I("green4")), size = I(0.6)) +
   geom_ribbon(aes(ymin = ylo, ymax = yhi, alpha = 1/20, 
                   fill = I("steelblue2"))) +
+  geom_step(aes(color=I("blue4")), size = I(0.6)) +
   facet_wrap(ncol = 3, ~ treat_id) +
   theme(legend.position="none") +
   coord_fixed(ratio = 1) + 
   xlab("p") + ylab("cdf")
+```
+
+```{r}
+
+plot_pair <- function(data, t1, t2) {
+  filter_(data, ~treat_id == t1 | treat_id == t2) %>%
+    mutate(treat = as.factor(treat_id)) %>%
+    ggplot(aes(x = x, y = y)) +
+    geom_line(mapping = aes(group = treat, color = treat)) +
+    scale_color_discrete(name = "Treatment") + 
+    coord_fixed(ratio = 1) + 
+    xlab("p") + ylab("cdf")
+}
+```
+
+
+```{r fig.height=3.5}
+plot_pair(ecdf_df, 1, 4)
+```
+
+```{r fig.height=3.5}
+plot_pair(ecdf_df, 2, 3)
+```
+
+```{r fig.height=3.5}
+plot_pair(ecdf_df, 5, 6)
+```
+
+```{r fig.height=3.5}
+plot_pair(ecdf_df, 7, 8)
 ```
 
