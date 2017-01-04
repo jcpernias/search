@@ -493,20 +493,14 @@ qksone <- function(alpha) {
   if (alpha > 0.5)
     stop("don't do less than 50% confidence")
   foo <- function(x) pksone(x) - 1 + alpha
-  uniroot(foo, c(0.5, 10), tol = 1e-8)
+  uniroot(foo, c(0.5, 10), tol = 1e-8)$root
 }
-
-Ka <- qksone(alpha)$root
-
 
 plots_df <- filter(smpl, !is.na(pavail)) %>% 
   select(treat_id, period, p = pavail)
 
-cv_df <- plots_df %>% group_by(treat_id) %>% 
-  summarise(cv = Ka / sqrt(n()))
-
 emp_dist <- function(var) {
-  cv <- Ka / sqrt(length(var)) 
+  cv <- qksone(alpha) / sqrt(length(var)) 
   dist <- ecdf(var)
   x <- knots(dist)
   y <- dist(x)
@@ -518,10 +512,14 @@ emp_dist <- function(var) {
 ecdf_df <- plots_df %>% 
   group_by(treat_id) %>% 
   do(as_data_frame(emp_dist(.$p)))
+```
+
+```{r fig.height=8.5 }
 
 ggplot(data = ecdf_df, aes(x = x, y = y)) +
-  geom_step() +
-  geom_ribbon(aes(ymin = ylo, ymax = yhi, alpha = 1)) +
+  geom_step(aes(color=I("blue4")), size = I(1)) +
+  geom_ribbon(aes(ymin = ylo, ymax = yhi, alpha = 1/20, 
+                  fill = I("steelblue2"))) +
   facet_wrap(ncol = 3, ~ treat_id) +
   theme(legend.position="none") +
   coord_fixed(ratio = 1) + 
