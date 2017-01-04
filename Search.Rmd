@@ -550,7 +550,8 @@ plot_pair <- function(data, t1, t2) {
   filter_(data, ~treat_id == t1 | treat_id == t2) %>%
     mutate(treat = as.factor(treat_id)) %>%
     ggplot(aes(x = x, y = y)) +
-    geom_line(mapping = aes(group = treat, color = treat)) +
+    geom_line(mapping = aes(group = treat, color = treat), 
+              size = I(0.6)) +
     scale_color_discrete(name = "Treatment") + 
     coord_fixed(ratio = 1) + 
     xlab("p") + ylab("cdf")
