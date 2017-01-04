@@ -8,6 +8,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, comment = " ")
+library(gridExtra)
 library(tidyverse)
 library(broom)
 library(knitr)
@@ -553,25 +554,20 @@ plot_pair <- function(data, t1, t2) {
     geom_line(mapping = aes(group = treat, color = treat), 
               size = I(0.6)) +
     scale_color_discrete(name = "Treatment") + 
-    coord_fixed(ratio = 1) + 
+    coord_fixed(ratio = 1, xlim = c(0, 1), ylim = c(0, 1)) + 
     xlab("p") + ylab("cdf")
 }
 ```
 
 
-```{r fig.height=3.5}
+```{r fig.height=2.6}
 plot_pair(ecdf_df, 1, 4)
 ```
 
-```{r fig.height=3.5}
-plot_pair(ecdf_df, 2, 3)
-```
 
-```{r fig.height=3.5}
-plot_pair(ecdf_df, 5, 6)
+```{r fig.height=8}
+p1 <- plot_pair(ecdf_df, 2, 3)
+p2 <- plot_pair(ecdf_df, 5, 6)
+p3 <- plot_pair(ecdf_df, 7, 8)
+grid.arrange(p1, p2, p3, ncol = 1)
 ```
-
-```{r fig.height=3.5}
-plot_pair(ecdf_df, 7, 8)
-```
-
