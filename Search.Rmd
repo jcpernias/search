@@ -17,9 +17,10 @@ library(knitr)
 library(lazyeval)
 ```
 
-## Package loading
 
 # Introduction
+
+## Package loading
 
 The following R packages were needed:
 ```{r packages, eval=FALSE}
@@ -582,6 +583,8 @@ pmap_df(pmin_hyp, pmin_map, data = markets3, exact = FALSE,
   kable(digits = 2, col.names = c("H1", "W (last)", ""))
 ```
 
+## Distribution plots
+
 
 ```{r}
 alpha <- 0.01
@@ -589,7 +592,7 @@ alpha <- 0.01
 # Taken from <http://www.stat.umn.edu/geyer/old/5601/examp/kolmogorov.html#one-ci>
 pksone <- function(x) {
   k <- seq(1:20)
-  1 + 2 * sum( (-1)^k * exp(- 2 * k^2 * x^2))
+  1 + 2 * sum( (-1)^k * exp(-2 * k^2 * x^2))
 }
 
 qksone <- function(alpha) {
