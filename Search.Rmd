@@ -490,40 +490,6 @@ summ_mean_tests(data = filter(tests_db, part == 3),
 
 
 
-
-
-
-
-
-```{r}
-dstats <- filter(markets_db, part == 3) %>% 
-  group_by(treat) %>%
-  summarise('Avg p: mean' = mean(pavg),
-            'Avg p: sd' = sd(pavg),
-            'Min p: mean' = mean(pmin),
-            'MIn p: sd' = sd(pmin))
-
-kable(dstats, digits = 3)
-```
-
-```{r}
-mean_tests(left_join(filter(markets_db, part == 3),
-                     mom_df, by = "treat"), 
-           var = ~pavg - pavg_mean,
-           by_var = ~treat) %>%
-  kable(digits = 3)
-```
-
-```{r}
-mean_tests(left_join(filter(markets_db, part == 3),
-                     mom_df, by = "treat"), 
-           var = ~pmin - pmin_mean,
-           by_var = ~treat) %>%
-  kable(digits = 3)
-```
-
-
-
 ## Tests
 
 ```{r}
