@@ -430,7 +430,7 @@ summ_mean_tests <- function(data, var, var_test, by_var) {
 
   test2 <- data %>% 
     mean_tests(var = var_test, by_var = by_var, 
-               test_func = wilcox.test) %>%
+               test_func = wilcox.test, exact = FALSE) %>%
     rename(W = statistic, pv_W = pv)
   
   left_join(dstats, test1, by = "treat") %>%
@@ -451,7 +451,10 @@ summ_mean_tests(data = tests_db,
         col.names = c("Treatment", "Mean", "SD", "t", "", "W", ""),
         align = "lrrrlrl")
 ```
+
+
 Wilcoxon test on means of average prices:
+
 ```{r}
 summ_mean_tests(data = tests_db,
                 var = ~pmin,
@@ -461,8 +464,6 @@ summ_mean_tests(data = tests_db,
         col.names = c("Treatment", "Mean", "SD", "t", "", "W", ""),
         align = "lrrrlrl")
 ```
-
-
 
 
 
@@ -477,7 +478,10 @@ summ_mean_tests(data = filter(tests_db, part == 3),
         col.names = c("Treatment", "Mean", "SD", "t", "", "W", ""),
         align = "lrrrlrl")
 ```
+
+
 Wilcoxon test on means of average prices:
+
 ```{r}
 summ_mean_tests(data = filter(tests_db, part == 3),
                 var = ~pmin,
