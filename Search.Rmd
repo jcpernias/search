@@ -447,79 +447,53 @@ summ_mean_tests(data = tests_db,
                 var = ~pavg,
                 var_test = ~pavg - pavg_mean,
                 by_var = ~treat) %>%
-  kable(digits = 3)
-```
-
-```{r}
-mean_tests(left_join(markets_db, mom_df, by = "treat"), 
-           var = ~pavg - pavg_mean,
-           by_var = ~treat) %>%
-  kable(digits = 3)
-```
-
-Wilcoxon test on means of average prices:
-
-```{r}
-mean_tests(left_join(markets_db, mom_df, by = "treat"), 
-           var = ~pavg - pavg_mean,
-           by_var = ~treat, 
-           test_func = wilcox.test) %>%
-  kable(digits = 3)
-```
-
-
-
-Descriptive statistics reported on Table 1:
-
-```{r}
-dstats <- markets_db %>% group_by(treat) %>%
-  summarise('Avg p: mean' = mean(pavg),
-            'Avg p: sd' = sd(pavg),
-            'Min p: mean' = mean(pmin),
-            'MIn p: sd' = sd(pmin))
-
-kable(dstats, digits = 3)
-```
-
-
-
-```{r}
-mean_tests <- function(data, var, by_var, test_func = t.test, ...) {
-  data %>% 
-    mutate_(x = var) %>% 
-    group_by_(by_var) %>%  
-    do(tidy(test_func(.$x, ...))) %>%
-    select_(by_var, "statistic", "p.value")
-}
-```
-
-t-tests on means of average prices:
-
-```{r}
-mean_tests(left_join(markets_db, mom_df, by = "treat"), 
-           var = ~pavg - pavg_mean,
-           by_var = ~treat) %>%
-  kable(digits = 3)
+  kable(digits = c(1, 3, 3, 1, 1, 1, 1), 
+        col.names = c("Treatment", "Mean", "SD", "t", "", "W", ""),
+        align = "lrrrlrl")
 ```
 Wilcoxon test on means of average prices:
-
 ```{r}
-mean_tests(left_join(markets_db, mom_df, by = "treat"), 
-           var = ~pavg - pavg_mean,
-           by_var = ~treat, 
-           test_func = wilcox.test) %>%
-  kable(digits = 3)
+summ_mean_tests(data = tests_db,
+                var = ~pmin,
+                var_test = ~pmin - pmin_mean,
+                by_var = ~treat) %>%
+  kable(digits = c(1, 3, 3, 1, 1, 1, 1), 
+        col.names = c("Treatment", "Mean", "SD", "t", "", "W", ""),
+        align = "lrrrlrl")
 ```
 
-```{r}
-mean_tests(left_join(markets_db, mom_df, by = "treat"), 
-           var = ~pmin - pmin_mean,
-           by_var = ~treat) %>%
-  kable(digits = 3)
-```
+
+
 
 
 Descriptive statistics for observations from the 10 last periods:
+
+```{r}
+summ_mean_tests(data = filter(tests_db, part == 3),
+                var = ~pavg,
+                var_test = ~pavg - pavg_mean,
+                by_var = ~treat) %>%
+  kable(digits = c(1, 3, 3, 1, 1, 1, 1), 
+        col.names = c("Treatment", "Mean", "SD", "t", "", "W", ""),
+        align = "lrrrlrl")
+```
+Wilcoxon test on means of average prices:
+```{r}
+summ_mean_tests(data = filter(tests_db, part == 3),
+                var = ~pmin,
+                var_test = ~pmin - pmin_mean,
+                by_var = ~treat) %>%
+  kable(digits = c(1, 3, 3, 1, 1, 1, 1), 
+        col.names = c("Treatment", "Mean", "SD", "t", "", "W", ""),
+        align = "lrrrlrl")
+```
+
+
+
+
+
+
+
 
 ```{r}
 dstats <- filter(markets_db, part == 3) %>% 
