@@ -610,7 +610,7 @@ ecdf_df <- plots_db %>%
 ```
 
 ```{r}
-eq_dist <- function(treat_id, n, k, phi, selective, lambda = 1 / 2) {
+eq_dist <- function(treat_id, n, k, phi, lambda = 1 / 2) {
   low <- Fsearch_low(n, k, phi, lambda)
   x <- seq(low, 1, length.out = 128)
   y <- Fsearch(n, k, phi, lambda)(x)
