@@ -423,11 +423,27 @@ summ_mean_tests <- function(data, var, var_test, by_var) {
   dstats <- data %>% group_by_(by_var) %>%
     summarise_('Mean' = f_interp(~mean(uq(var))), 
                'SD' = f_interp(~sd(uq(var))))
-  dstats  
+
+  test1 <- data %>% 
+    mean_tests(var = var_test, by_var = by_var) %>%
+    rename(t = statistic, pv_t = pv)
+
+  test2 <- data %>% 
+    mean_tests(var = var_test, by_var = by_var, 
+               test_func = wilcox.test) %>%
+    rename(W = statistic, pv_W = pv)
+  
+  left_join(dstats, test1, by = "treat") %>%
+    left_join(test2, by = "treat")
 }
+```
 
+```{r}
+tests_db <- left_join(markets_db, mom_df, by = "treat") 
+```
 
-summ_mean_tests(data  = left_join(markets_db, mom_df, by = "treat"), 
+```{r}
+summ_mean_tests(data = tests_db,
                 var = ~pavg,
                 var_test = ~pavg - pavg_mean,
                 by_var = ~treat) %>%
