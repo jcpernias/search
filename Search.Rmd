@@ -402,6 +402,57 @@ Conclusions:
 
 
 ## Descriptive statistics
+
+Utility function that computes tests on the mean of the price distributions.
+```{r}
+mean_tests <- function(data, var, by_var, test_func = t.test, ...) {
+  data %>% 
+    mutate_(x = var) %>% 
+    group_by_(by_var) %>%  
+    do(tidy(test_func(.$x, ...))) %>%
+    mutate(pv = pv_to_stars(p.value)) %>%
+    select_(by_var, "statistic", "pv")
+}
+```
+
+
+Descriptive statistics reported on Table 1:
+
+```{r}
+summ_mean_tests <- function(data, var, var_test, by_var) {
+  dstats <- data %>% group_by_(by_var) %>%
+    summarise_('Mean' = f_interp(~mean(uq(var))), 
+               'SD' = f_interp(~sd(uq(var))))
+  dstats  
+}
+
+
+summ_mean_tests(data  = left_join(markets_db, mom_df, by = "treat"), 
+                var = ~pavg,
+                var_test = ~pavg - pavg_mean,
+                by_var = ~treat) %>%
+  kable(digits = 3)
+```
+
+```{r}
+mean_tests(left_join(markets_db, mom_df, by = "treat"), 
+           var = ~pavg - pavg_mean,
+           by_var = ~treat) %>%
+  kable(digits = 3)
+```
+
+Wilcoxon test on means of average prices:
+
+```{r}
+mean_tests(left_join(markets_db, mom_df, by = "treat"), 
+           var = ~pavg - pavg_mean,
+           by_var = ~treat, 
+           test_func = wilcox.test) %>%
+  kable(digits = 3)
+```
+
+
+
 Descriptive statistics reported on Table 1:
 
 ```{r}
