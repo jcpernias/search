@@ -579,8 +579,6 @@ left_join(pmap_df(pmin_hyp, pmin_map, data = markets3,
 
 
 ```{r}
-alpha <- 0.01
-
 # Taken from <http://www.stat.umn.edu/geyer/old/5601/examp/kolmogorov.html#one-ci>
 pksone <- function(x) {
   k <- seq(1:20)
@@ -594,7 +592,7 @@ qksone <- function(alpha) {
   uniroot(foo, c(0.5, 10), tol = 1e-8)$root
 }
 
-emp_dist <- function(var) {
+emp_dist <- function(var, alpha) {
   cv <- qksone(alpha) / sqrt(length(var)) 
   dist <- ecdf(var)
   x <- knots(dist)
@@ -606,7 +604,7 @@ emp_dist <- function(var) {
 
 ecdf_df <- plots_db %>% 
   group_by(treat_id) %>% 
-  do(as_data_frame(emp_dist(.$p))) 
+  do(as_data_frame(emp_dist(.$p, alpha = 0.01))) 
 ```
 
 ```{r}
@@ -676,7 +674,7 @@ grid.arrange(p1, p2, p3, ncol = 1)
 ```{r fig.height=8.5}
 ecdf_df3 <- filter(plots_db, period > 40) %>% 
   group_by(treat_id) %>% 
-  do(as_data_frame(emp_dist(.$p))) 
+  do(as_data_frame(emp_dist(.$p, alpha = 0.01))) 
 
 treat_plots(ecdf_df3)
 ```
