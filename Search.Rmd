@@ -20,6 +20,8 @@ library(lazyeval)
 
 # Introduction
 
+This file documents the data and the statistical analyses of the paper _`Bias and Size Effects of Price-Comparison Platforms: Theory and Experimental Evidence'_ by ... The R code that compute the statistics and do the plots is also reported. 
+
 ## Package loading
 
 The following R packages were needed:
@@ -41,6 +43,22 @@ pv_to_stars <- function(pv) {
   paste0(cvt[(pv <= 0.05) + 1], cvt[(pv <= 0.01) + 1])
 }
 ```
+
+```{r}
+# Taken from <http://www.stat.umn.edu/geyer/old/5601/examp/kolmogorov.html#one-ci>
+pksone <- function(x) {
+  k <- seq(1:20)
+  1 + 2 * sum( (-1)^k * exp(-2 * k^2 * x^2))
+}
+
+qksone <- function(alpha) {
+  if (alpha > 0.5)
+    stop("don't do less than 50% confidence")
+  foo <- function(x) pksone(x) - 1 + alpha
+  uniroot(foo, c(0.5, 10), tol = 1e-8)$root
+}
+```
+
 
 # Data
 
@@ -579,19 +597,6 @@ left_join(pmap_df(pmin_hyp, pmin_map, data = markets3,
 
 
 ```{r}
-# Taken from <http://www.stat.umn.edu/geyer/old/5601/examp/kolmogorov.html#one-ci>
-pksone <- function(x) {
-  k <- seq(1:20)
-  1 + 2 * sum( (-1)^k * exp(-2 * k^2 * x^2))
-}
-
-qksone <- function(alpha) {
-  if (alpha > 0.5)
-    stop("don't do less than 50% confidence")
-  foo <- function(x) pksone(x) - 1 + alpha
-  uniroot(foo, c(0.5, 10), tol = 1e-8)$root
-}
-
 emp_dist <- function(var, alpha) {
   cv <- qksone(alpha) / sqrt(length(var)) 
   dist <- ecdf(var)
@@ -620,7 +625,6 @@ eq_df <- pmap_df(select(treat_db, -one_of("selective")), eq_dist)
 
 
 ```{r fig.height=8.5}
-
 treat_plots <- function(data) {
   ggplot(data = data, aes(x = x, y = y)) +
     geom_line(data = eq_df, aes(x = x, y = y, 
@@ -642,7 +646,6 @@ treat_plots(ecdf_df)
 ```
 
 ```{r}
-
 plot_pair <- function(data, t1, t2) {
   filter_(data, ~treat_id == t1 | treat_id == t2) %>%
     mutate(treat = as.factor(treat_id)) %>%
