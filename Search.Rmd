@@ -14,7 +14,7 @@ output:
 
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, comment = " ")
+knitr::opts_chunk$set(echo = TRUE, comment = NA)
 
 library(gridExtra)
 library(tidyverse)
@@ -324,15 +324,6 @@ kable(mom_df, digits = 3,
 # Results
 
 ## Trends
-
-```{r}
-ks_tests <- function(data) {
-  x <- data$p[data$part == 1]
-  y <- data$p[data$part == 3]
-  ks.test(x, y)
-}
-```
-
 
 In this paper, we focus on average prices and not on prices set by each firm across time. We use anumber of strategies to detect the presence of trends in data.  First, we use simple plots of expected prices against time. 
 
