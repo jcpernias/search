@@ -47,7 +47,7 @@ pv_to_stars <- function(pv) {
 ```
 
 The following functions are taken from <http://www.stat.umn.edu/geyer/old/5601/examp/kolmogorov.html#one-ci> and are used to compute the critical values of the one-sample Kolmogorov-Sminrnov tests. These critical values will be used in the plots comparing the equilibrium and emprical price distributions.
-
+ 
 ```{r}
 pksone <- function(x) {
   k <- seq(1:20)
@@ -665,12 +665,12 @@ plot_pair <- function(data, t1, t2) {
 ```
 
 
-```{r fig.height=2.6}
+```{r fig.height=2.6, fig.align="center"}
 plot_pair(ecdf_df, 1, 4)
 ```
 
 
-```{r fig.height=8}
+```{r fig.height=8, fig.align="center"}
 p1 <- plot_pair(ecdf_df, 2, 3)
 p2 <- plot_pair(ecdf_df, 5, 6)
 p3 <- plot_pair(ecdf_df, 7, 8)
@@ -685,11 +685,11 @@ ecdf_df3 <- filter(plots_db, period > 40) %>%
 treat_plots(ecdf_df3)
 ```
 
-```{r fig.height=2.6}
+```{r fig.height=2.6, fig.align="center"}
 plot_pair(ecdf_df3, 1, 4)
 ```
 
-```{r fig.height=8}
+```{r fig.height=8, fig.align="center"}
 p1 <- plot_pair(ecdf_df3, 2, 3)
 p2 <- plot_pair(ecdf_df3, 5, 6)
 p3 <- plot_pair(ecdf_df3, 7, 8)
