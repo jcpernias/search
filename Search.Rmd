@@ -3,6 +3,8 @@ title: "Bias and Size Effects of Price-Comparison Platforms: Theory and Experime
 output:
   pdf_document: 
     number_sections: true
+    toc: true
+    toc_depth: 3
   html_document: default
 ---
 
@@ -464,6 +466,10 @@ summ_mean_tests <- function(data, var, var_test, by_var) {
 tests_db <- left_join(markets_db, mom_df, by = "treat") 
 ```
 
+
+### Whole sample
+
+
 ```{r}
 summ_mean_tests(data = tests_db,
                 var = ~pavg,
@@ -487,7 +493,7 @@ summ_mean_tests(data = tests_db,
         align = "lrrrlrl")
 ```
 
-
+### Only the last 10 periods
 
 Descriptive statistics for observations from the 10 last periods:
 
@@ -555,6 +561,9 @@ pmin_hyp <- list(g1 = c(4, 4, 4, 5, 1, 2, 6, 8, 8, 3, 8, 6, 8, 3),
 
 ```
 
+### Whole sample
+
+
 ```{r}
 left_join(pmap_df(pavg_hyp, pavg_map, data = markets_db, 
                   var.equal = TRUE) %>% pmap_df(fmt_tests), 
@@ -573,6 +582,8 @@ left_join(pmap_df(pmin_hyp, pmin_map, data = markets_db,
           by = "H1") %>%
   kable(digits = 2, col.names = c("H1", "t", "", "W", ""))
 ```
+
+### Only the last 10 periods
 
 
 ```{r}
@@ -627,7 +638,7 @@ eq_df <- pmap_df(select(treat_db, -one_of("selective")), eq_dist)
 ```
 
 
-```{r fig.height=8.5}
+```{r}
 treat_plots <- function(data) {
   ggplot(data = data, aes(x = x, y = y)) +
     geom_line(data = eq_df, aes(x = x, y = y, 
@@ -644,8 +655,6 @@ treat_plots <- function(data) {
     coord_fixed(ratio = 1, xlim = c(0, 1), ylim = c(0, 1), expand = FALSE) + 
     xlab("p") + ylab("cdf")
 }
-
-treat_plots(ecdf_df)
 ```
 
 ```{r}
@@ -665,6 +674,14 @@ plot_pair <- function(data, t1, t2) {
 ```
 
 
+### Whole sample
+
+```{r fig.height=8.5}
+treat_plots(ecdf_df)
+```
+
+
+
 ```{r fig.height=2.6, fig.align="center"}
 plot_pair(ecdf_df, 1, 4)
 ```
@@ -677,11 +694,16 @@ p3 <- plot_pair(ecdf_df, 7, 8)
 grid.arrange(p1, p2, p3, ncol = 1)
 ```
 
-```{r fig.height=8.5}
+
+### Only the last 10 periods
+
+```{r}
 ecdf_df3 <- filter(plots_db, period > 40) %>% 
   group_by(treat_id) %>% 
   do(as_data_frame(emp_dist(.$p, alpha = 0.01))) 
+```
 
+```{r fig.height=8.5}
 treat_plots(ecdf_df3)
 ```
 
