@@ -20,7 +20,9 @@ library(lazyeval)
 
 # Introduction
 
-This file documents the data and the statistical analyses of the paper _`Bias and Size Effects of Price-Comparison Platforms: Theory and Experimental Evidence'_ by ... The R code that compute the statistics and do the plots is also reported. 
+This file documents the data and the statistical analyses of the paper _`Bias and Size Effects of Price-Comparison Platforms: Theory and Experimental Evidence'_ by Aurora García-Gallego, Nikolaos Georgantzís, Pedro Pereira, and José C. Pernías.
+
+The R code that compute the statistics and do the plots is also reported. 
 
 ## Package loading
 
@@ -44,8 +46,9 @@ pv_to_stars <- function(pv) {
 }
 ```
 
+The following functions are taken from <http://www.stat.umn.edu/geyer/old/5601/examp/kolmogorov.html#one-ci> and are used to compute the critical values of the one-sample Kolmogorov-Sminrnov tests. These critical values will be used in the plots comparing the equilibrium and emprical price distributions.
+
 ```{r}
-# Taken from <http://www.stat.umn.edu/geyer/old/5601/examp/kolmogorov.html#one-ci>
 pksone <- function(x) {
   k <- seq(1:20)
   1 + 2 * sum( (-1)^k * exp(-2 * k^2 * x^2))
