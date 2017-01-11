@@ -1,11 +1,15 @@
 ---
-title: "Bias and Size Effects of Price-Comparison Platforms: Theory and Experimental Evidence"
+title: 'Bias and Size Effects of Price-Comparison Platforms: Theory and Experimental
+  Evidence'
 output:
-  pdf_document: 
-    number_sections: true
-    toc: true
+  pdf_document:
+    number_sections: yes
+    toc: yes
     toc_depth: 3
-  html_document: default
+  html_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
 ---
 
 
@@ -178,22 +182,22 @@ markets_db <- smpl_db %>% group_by(market_id) %>%
 # Equilibrium price distributions
 
 The equilibrium price distribution is given by
-\begin{equation*}
+$$
 F(p; n, k, \phi, \lambda) = 
 \begin{cases}
 0 & 0 \leq p < l \\
 1 - \left[
-  \dfrac{1}{n \phi}
-  \dfrac{\lambda}{1 - \lambda}
-  \dfrac{1 - p}{p}
+\dfrac{1}{n \phi}
+\dfrac{\lambda}{1 - \lambda}
+\dfrac{1 - p}{p}
 \right]^{1/(k-1)}
 & l \leq p \leq 1 
 \end{cases}
-\end{equation*}
+$$
 where 
-\begin{equation*}
+$$
 l = \frac{\lambda}{\lambda + (1 - \lambda) n \phi}
-\end{equation*}
+$$
 
 The following function computes `l`, the lower limit of the support of the equlibrium distribution:
 ```{r}
@@ -225,7 +229,7 @@ Fsearch <- function(n, k, phi, lambda = 1 / 2) {
 
     # Third case: l < p < 1
     idx <- p > low & p < 1.0
-    if(any(idx)) {
+    if (any(idx)) {
       pi <- p[idx]
       prob[idx] <- 1 - (const * (1 - pi) / pi) ^ pow
     }
@@ -321,6 +325,15 @@ kable(mom_df, digits = 3,
 
 ## Trends
 
+```{r}
+ks_tests <- function(data) {
+  x <- data$p[data$part == 1]
+  y <- data$p[data$part == 3]
+  ks.test(x, y)
+}
+```
+
+
 In this paper, we focus on average prices and not on prices set by each firm across time. We use anumber of strategies to detect the presence of trends in data.  First, we use simple plots of expected prices against time. 
 
 ```{r}
@@ -389,13 +402,13 @@ trend_tests <- function(var, group, filter_frml) {
 
 Plots for the average market prices:
 
-```{r fig.height=8.75}
+```{r fig.height=8.75, fig.align="center"}
 trend_plots(~pavg)
 ```
 
 Plots for the minimum market prices:
 
-```{r fig.height=8.75}
+```{r fig.height=8.75, fig.align="center"}
 trend_plots(~pmin)
 ```
 
@@ -533,9 +546,9 @@ treat_test <- function(var, group_var, g1, g2, data, ...,
   test_func(x[g == g1], x[g == g2], ...)
 } 
 
-fmt_tests <- function(g1, g2, H1, statistic, p.value, prefix = "eps_") {
-  cvt <- c("less" = " < ", "greater" = " > ", "two.sided" = " != ")
-  H1str <- paste(prefix, g1, cvt[H1], prefix, g2, sep = "")
+fmt_tests <- function(g1, g2, H1, statistic, p.value, prefix = "\\epsilon_") {
+  cvt <- c("less" = " < ", "greater" = " > ", "two.sided" = " \\neq ")
+  H1str <- paste("$", prefix, g1, cvt[H1], prefix, g2, "$", sep = "")
   tibble(H1 = H1str, stat = statistic, pv = pv_to_stars(p.value))
 }
 
@@ -577,10 +590,10 @@ left_join(pmap_df(pavg_hyp, pavg_map, data = markets_db,
 
 ```{r}
 left_join(pmap_df(pmin_hyp, pmin_map, data = markets_db, 
-                  var.equal = TRUE) %>% pmap_df(fmt_tests, prefix = "mu_"), 
+                  var.equal = TRUE) %>% pmap_df(fmt_tests, prefix = "\\mu_"), 
           pmap_df(pmin_hyp, pmin_map, data = markets_db, exact = FALSE, 
                   test_func = wilcox.test)  %>% 
-            pmap_df(fmt_tests, prefix = "mu_"),
+            pmap_df(fmt_tests, prefix = "\\mu_"),
           by = "H1") %>%
   kable(digits = 2, col.names = c("H1", "t", "", "W", ""))
 ```
@@ -601,10 +614,10 @@ left_join(pmap_df(pavg_hyp, pavg_map, data = markets3,
 
 ```{r}
 left_join(pmap_df(pmin_hyp, pmin_map, data = markets3, 
-                  var.equal = TRUE) %>% pmap_df(fmt_tests, prefix = "mu_"), 
+                  var.equal = TRUE) %>% pmap_df(fmt_tests, prefix = "\\mu_"), 
           pmap_df(pmin_hyp, pmin_map, data = markets3, exact = FALSE, 
                   test_func = wilcox.test)  %>% 
-            pmap_df(fmt_tests, prefix = "mu_"),
+            pmap_df(fmt_tests, prefix = "\\mu_"),
           by = "H1") %>%
   kable(digits = 2, col.names = c("H1", "t", "", "W", ""))
 ```
@@ -680,7 +693,7 @@ plot_pair <- function(data, t1, t2) {
 
 Figure 4 of the paper.
 
-```{r fig.height=8.5}
+```{r fig.height=8.5, fig.align="center"}
 treat_plots(ecdf_df)
 ```
 
@@ -710,7 +723,7 @@ ecdf_df3 <- filter(plots_db, period > 40) %>%
   do(as_data_frame(emp_dist(.$p, alpha = 0.01))) 
 ```
 
-```{r fig.height=8.5}
+```{r fig.height=8.5, fig.align="center"}
 treat_plots(ecdf_df3)
 ```
 
