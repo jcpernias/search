@@ -155,7 +155,7 @@ We use the database `plots_db` for plotting distribution functions. This databas
 
 ```{r}
 plots_db <- filter(smpl_db, !is.na(pindexable)) %>% 
-  select(treat_id, period, p = pindexable)
+  select(treat_id, period, part, p = pindexable)
 ```
 
 Most of the tests in this paper are about expected prices. The `markets_db` database contains two new variables built from price averages:
