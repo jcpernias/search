@@ -203,7 +203,7 @@ Fsearch_low <- function(n, k, phi, lambda = 1 / 2) {
 ```
 
 
-We use a function factory to build the cdf for a given combination of parameters:
+We use a function factory to build the cummulative distribution function for a given combination of parameters:
 
 ```{r}
 Fsearch <- function(n, k, phi, lambda = 1 / 2) {
@@ -469,6 +469,7 @@ tests_db <- left_join(markets_db, mom_df, by = "treat")
 
 ### Whole sample
 
+See Table 1 of the paper. 
 
 ```{r}
 summ_mean_tests(data = tests_db,
@@ -563,6 +564,7 @@ pmin_hyp <- list(g1 = c(4, 4, 4, 5, 1, 2, 6, 8, 8, 3, 8, 6, 8, 3),
 
 ### Whole sample
 
+Table 2 of the paper.
 
 ```{r}
 left_join(pmap_df(pavg_hyp, pavg_map, data = markets_db, 
@@ -676,16 +678,21 @@ plot_pair <- function(data, t1, t2) {
 
 ### Whole sample
 
+Figure 4 of the paper.
+
 ```{r fig.height=8.5}
 treat_plots(ecdf_df)
 ```
 
 
+Figure 5 of the paper.
 
 ```{r fig.height=2.6, fig.align="center"}
 plot_pair(ecdf_df, 1, 4)
 ```
 
+
+Figure 6 of the paper.
 
 ```{r fig.height=8, fig.align="center"}
 p1 <- plot_pair(ecdf_df, 2, 3)
